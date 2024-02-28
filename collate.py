@@ -170,8 +170,7 @@ class CollationEngine():
             elif 'link' in self.webpage_type:
                 t1_row_name = t1_row.text
             data[t1_row_name] = {}
-            print(t1_row_name)
-            
+
             t1_row.click()
             self.calculate_tables()
             
@@ -181,7 +180,6 @@ class CollationEngine():
                     t2_row_name = t2_row.text.rsplit(' ', 1)[0]
                 elif 'link' in self.webpage_type:
                     t2_row_name = t2_row.text
-                print(t2_row_name)
                 
                 t2_row.click()
                 self.calculate_tables()
