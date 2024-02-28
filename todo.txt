@@ -1,0 +1,3 @@
+- [ ] move table and row functionality into separate Table class
+- [ ] allow user to specify an arbitrary number of axes
+- [ ] add an optimize flag to CollateEngine's __init__ method to indicate whether we should solve for the path through the specified axes that minimizes the number of total clicks/waits
