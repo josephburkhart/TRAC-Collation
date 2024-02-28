@@ -48,17 +48,23 @@ class CollationEngine():
         self.driver = Firefox(options=options)
         self.driver.get(url)
 
+        self.filename = filename
         self.timeout = timeout
         self.axes = axes
+
 
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
 
         # Calculate axes and tables
-        self.calculate_tables()
         self.calculate_menus()
         self.set_axes()
-
+        self.calculate_tables()
+  
+        self.create_dataset()
+        self.clean_dataset()
+        self.save_dataset()
+    
         # close browser
         sleep(10)
         self.driver.close()
@@ -124,8 +130,9 @@ class CollationEngine():
     
     def parse_table(self, table, into: Literal['text_rows', 'clickable_rows']):
         if into == 'text_rows':
-            rows = [r.rsplit(' ', 1) for r in table.text.split('\n')]           #note: skip first two rows
-            rows = [r for r in rows if r != '' and r.find('All') == -1]         #note: several blank rows and a total row are always at the top
+            rows = [r.rsplit(' ', 1) for r in table.text.split('\n')]
+            rows = [r for r in rows if r[0] != '' and 'All' not in r[0]]         #note: several blank rows and a total row are always at the top
+            rows = [r for r in rows if r[1] != 'Total']                               #note: link-based tables have a total row at the top
             rows = [[r[0], r[1].replace(',', '')] for r in rows]
         
         elif into =='clickable_rows':
@@ -144,13 +151,73 @@ class CollationEngine():
                         (By.XPATH, ".//tr/td[@class='Data l']/a")   #note: may change in the future
                     )
                 )
+
+            rows = [r for r in rows if r.text != '' and r.text.find('All') == -1]
+            rows = [r for r in rows if r.text.find('Total') == -1]
+
         return rows
+    
+    def create_dataset(self):
+        self.calculate_tables()
+        
+        data = {}
 
-    def write_entry_to_temp_file(self):
-        pass
+        for t1_row in self.parse_table(self.tables[0], into='clickable_rows'):
+            # TODO: this feels really hacky - I need to change how I'm handling these
+            # two different types of pages
+            if 'object' in self.webpage_type:
+                t1_row_name = t1_row.text.rsplit(' ', 1)[0]
+            elif 'link' in self.webpage_type:
+                t1_row_name = t1_row.text
+            data[t1_row_name] = {}
+            print(t1_row_name)
+            
+            t1_row.click()
+            self.calculate_tables()
+            
+            for t2_row in self.parse_table(self.tables[1], into='clickable_rows'):
+                # TODO: make this better
+                if 'object' in self.webpage_type:
+                    t2_row_name = t2_row.text.rsplit(' ', 1)[0]
+                elif 'link' in self.webpage_type:
+                    t2_row_name = t2_row.text
+                print(t2_row_name)
+                
+                t2_row.click()
+                self.calculate_tables()
 
-    def write_page_to_hdf(self):
-        pass
+                t3_rows = self.parse_table(self.tables[2], into='text_rows')
+                t3_entries = {r[0]: int(r[1]) for r in t3_rows} #note the conversion to int
+                data[t1_row_name][t2_row_name] = t3_entries
+        self.data = data
+        self.df = pd.concat(                # https://stackoverflow.com/a/54300940
+            {k: pd.DataFrame(v).T for k, v in data.items()}, 
+            axis=0
+        )
+
+    def clean_dataset(self):
+        # Rectify missing second-level index entries
+        unique_index1 = self.df.index.unique(0)
+        unique_index2 = self.df.index.unique(1)
+        new_index = pd.MultiIndex.from_product([unique_index1, unique_index2])
+        self.df = self.df.reindex(new_index, axis='index')
+
+        # Change all NaN values to 0
+        self.df = self.df.fillna(value=0.0)
+
+        # Sort df
+        self.df = self.df.sort_index()
+
+        # Add a Total Column
+        self.df['Total'] = self.df.sum(axis=1)
+
+        # Convert all floats to int (cannot have fractions of people)
+        float_cols = self.df.select_dtypes(include=['float64'])
+        for col in float_cols.columns.values:
+            self.df[col] = self.df[col].astype('int64')
+
+    def save_dataset(self):
+        self.df.to_hdf(self.filename, key='TRACDataset')
 
 
 
@@ -158,8 +225,7 @@ if __name__ == '__main__':
     engine = CollationEngine(
         'https://trac.syr.edu/phptools/immigration/closure/',
         # 'https://trac.syr.edu/phptools/immigration/cbparrest/',
-        'test',
-        axes=['Language', 'Custody', 'Represented']
+        'test.hdf',
+        axes=['Custody', 'Represented', 'Language']
+        # axes=['Child/Family Group', 'Special Initiatives', 'BP Disposition']
     )
-
-
