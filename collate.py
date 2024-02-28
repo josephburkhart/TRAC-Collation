@@ -153,3 +153,13 @@ class CollationEngine():
         pass
 
 
+
+if __name__ == '__main__':
+    engine = CollationEngine(
+        'https://trac.syr.edu/phptools/immigration/closure/',
+        # 'https://trac.syr.edu/phptools/immigration/cbparrest/',
+        'test',
+        axes=['Language', 'Custody', 'Represented']
+    )
+
+
