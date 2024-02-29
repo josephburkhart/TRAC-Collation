@@ -330,6 +330,6 @@ if __name__ == '__main__':
         'https://trac.syr.edu/phptools/immigration/asylum/',
         # 'https://trac.syr.edu/phptools/immigration/cbparrest/',
         'test.hdf',
-        axes=['Custody', 'Represented', 'Decision']
+        axes=['Custody', 'Gender', 'Age']
         # axes=['Child/Family Group', 'Special Initiatives', 'BP Disposition']
     )
