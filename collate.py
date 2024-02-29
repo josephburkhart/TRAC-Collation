@@ -103,7 +103,96 @@ class Row:
                 )
             )
             clickable_element.click()
+
+class AxisMenu:
+    """An AxisMenu is a clickable collection of Options."""
+    def __init__(self, driver, webpage_type, axis_index):
+        # Set instance attributes
+        self.driver = driver
+        self.webpage_type = webpage_type
+
+        # Calculate menus
+        wait = WebDriverWait(driver, TIMEOUT)
+        #TODO: account for object-broken and link-broken
+        if 'object' in webpage_type:
+            menus = wait.until(
+                EC.presence_of_all_elements_located(
+                    (By.XPATH, "//button[starts-with(@id, 'headlessui-listbox-button')]")
+                )
+            )
+        elif 'link' in webpage_type:
+            menus = wait.until(
+                EC.presence_of_all_elements_located(
+                    (By.XPATH, "//select[starts-with(@id, 'dimension_pick')]")
+                )
+            )
+        self.clickable_element = menus[axis_index]
+
+        # Calculate options
+        self.calculate_options()
+
+    def calculate_options(self):
+        if 'object' in self.webpage_type:
+            # Listbox is not contained in the clickable element, and options
+            # are inside it. The clickable element must be clicked before
+            # the listbox will appear.
+            self.click()
+            wait = WebDriverWait(self.driver, TIMEOUT)
+            listbox_element = wait.until(EC.presence_of_element_located(
+                (By.XPATH, "//ul[starts-with(@id, 'headlessui-listbox-options')]")
+            ))
+
+            wait = WebDriverWait(listbox_element, TIMEOUT)
+            option_elements = wait.until(
+                EC.presence_of_all_elements_located(
+                    (By.XPATH, ".//*[@role='option']/li/span")
+                )
+            )
+
+        elif 'link' in self.webpage_type:
+            # options are inside the clickable element
+            wait = WebDriverWait(self.clickable_element, TIMEOUT)
+            option_elements = wait.until(EC.presence_of_all_elements_located(
+                    (By.XPATH, f".//option")
+            ))
+        self.options = [Option(e) for e in option_elements]
+
+    def click(self):
+        self.clickable_element.click()
+
+    def set_to(self, axis_name: str):
+        # For object-based, have to re-calculate options because the references
+        # calculated previously have turned stale
+        if 'object' in self.webpage_type:
+            self.calculate_options()        # note: this automatically clicks
+        elif 'link' in self.webpage_type:
+            self.click()                    # opens the menu
+
+        # Select the given option
+        # TODO: is there a better way to do this than list comprehension?
+        option_to_click = [o for o in self.options if o.name == axis_name]
+        option_to_click[0].click()
+
+    def calculate_all(driver, webpage_type):
+        if webpage_type == 'object-whole':
+            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]
+        elif webpage_type == 'link-whole':
+            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]
+        elif webpage_type == 'object-broken':
+            pass        #TODO: add this
+        elif webpage_type == 'link-broken':
+            pass        #TODO: add this
+        return menus
+
+class Option:
+    """An Option is clickable and has a name."""
+    def __init__(self, clickable_web_element):
+        self.clickable_element = clickable_web_element
+        self.name = clickable_web_element.text
     
+    def click(self):
+        self.clickable_element.click()
+
 
 class CollationEngine():
     # For first implementation, user will specify three axes which will correspond
@@ -118,18 +207,23 @@ class CollationEngine():
         self.driver = Firefox(options=options)
         self.driver.get(url)
 
+        # Set instance attributes
         self.filename = filename
         self.axes = axes
         self.tables = [None, None, None]
 
-
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
 
-        # Calculate axes and tables
-        self.calculate_menus()
-        self.set_axes()
-  
+        # Calculate Menus
+        # TODO: this currently doesn't work for broken-out webpages
+        self.menus = AxisMenu.calculate_all(self.driver, self.webpage_type) 
+
+        # Set Axes
+        for i, a in enumerate(self.axes):
+            self.menus[i].set_to(a)
+
+        # Dataset
         self.create_dataset()
         self.clean_dataset()
         self.save_dataset()
@@ -137,53 +231,6 @@ class CollationEngine():
         # close browser
         sleep(10)
         self.driver.close()
-
-    def calculate_menus(self):
-        wait = WebDriverWait(self.driver, TIMEOUT)
-
-        #TODO: account for object-broken and link-broken
-        if 'object' in self.webpage_type:
-            self.menus = wait.until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, "//button[starts-with(@id, 'headlessui-listbox-button')]")
-                )
-            )
-        elif 'link' in self.webpage_type:
-            self.menus = wait.until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, "//select[starts-with(@id, 'dimension_pick')]")
-                )
-            )
-    
-    def set_axes(self):
-        if 'object' in self.webpage_type:
-            # Note: for webpages of this type, menus that were previously calculated are actually buttons to open the menus
-            for i, menu in enumerate(self.menus):
-                menu.click()
-                wait = WebDriverWait(self.driver, TIMEOUT)
-                menu = wait.until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, "//ul[starts-with(@id, 'headlessui-listbox-options')]")
-                    )
-                )
-
-                wait = WebDriverWait(menu, TIMEOUT)
-                option = wait.until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, f".//*[@role='option']/li/span[text()='{self.axes[i]}']")
-                    )
-                )
-                option.click()
-                
-        elif 'link' in self.webpage_type:
-            for i, menu in enumerate(self.menus):
-                wait = WebDriverWait(menu, TIMEOUT)
-                option = wait.until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, f".//option[.='{self.axes[i]}']")
-                    )
-                )
-                option.click()
 
     def calculate_tables(self, indices):
         if 'object' in self.webpage_type:
