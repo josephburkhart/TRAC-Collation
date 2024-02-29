@@ -303,8 +303,11 @@ class CollationEngine():
         # Change all NaN values to 0
         self.df = self.df.fillna(value=0.0)
 
-        # Sort df
+        # Sort df rows
         self.df = self.df.sort_index()
+
+        # Sort df columns
+        self.df = self.df.reindex(sorted(self.df.columns, axis=1))
 
         # Add a Total Column
         self.df['Total'] = self.df.sum(axis=1)
@@ -314,11 +317,9 @@ class CollationEngine():
         for col in float_cols.columns.values:
             self.df[col] = self.df[col].astype('int64')
 
-        # TODO: rename indices to reflect axis names
-            
-        # TODO: sort columns
-        
-        # TODO: replace known duplicates
+        # Rename indices to reflect axis names
+        for i, a in enumerate(self.axes):
+            self.df.index.rename(name=a, level=i, inplace=True)     
             
     def save_dataset(self):
         self.df.to_hdf(self.filename, key='TRACDataset')
