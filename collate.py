@@ -39,21 +39,29 @@ TIMEOUT = 10
 
 class Table:
     """A Table is a collection of Rows."""
-    def __init__(self, web_element, table_type: Literal['object', 'link']):
+    def __init__(self, web_element, table_type: Literal['object', 'link'], index):
         # Set instance attributes
         self.web_element = web_element
         self._rows = None
         self.table_type = table_type
+        self.index = index
 
-    @property
-    def rows(self):
+    def rows(self, recalculate=False, driver=None, webpage_type=None):
         # Only calculate rows when asked to
         # https://stackoverflow.com/a/69379239/15426433
-        if self._rows is None:
-            self._rows = self.calculate_rows()
+        # Note: if recalculate is True, driver and webpage_type are required
+        if self._rows is None or recalculate:
+            self._rows = self.calculate_rows(refresh_table=recalculate,
+                                             driver=driver,
+                                             webpage_type=webpage_type)
         return self._rows
     
-    def calculate_rows(self):
+    def calculate_rows(self, refresh_table: bool=False, driver=None, webpage_type=None):
+        # If table has been refreshed, calculate a new web element
+        # Note: if refresh_table is True, driver and webpage_type are required
+        if refresh_table:
+            table_elements = Table.calculate_web_elements(driver, webpage_type)
+            self.web_element = table_elements[self.index]
         # Get elements for all rows
         wait = WebDriverWait(self.web_element, TIMEOUT)
         if self.table_type == 'object':
@@ -80,6 +88,31 @@ class Table:
 
         # Make a Row from each element
         return [Row(e, t, self.table_type) for e, t in zip(row_elements, text_rows)]
+    
+    @staticmethod
+    def calculate_all(driver, webpage_type):
+        # Helper method that just calls calculate but in a more friendly way
+        if 'object' in webpage_type:
+            table_type = 'object'
+        elif 'link' in webpage_type:
+            table_type = 'link'
+        table_elements = Table.calculate_web_elements(driver, webpage_type)
+        return [Table(e, table_type, i) for i, e in enumerate(table_elements)]
+    
+    @staticmethod
+    def calculate_web_elements(driver, webpage_type):
+        # Calculate a single Table for a given index
+        # If index is None, all Tables will be returned
+        if 'object' in webpage_type:
+            class_name = 'table-fixed'
+        elif 'link' in webpage_type:
+            class_name = 'Table'
+
+        wait = WebDriverWait(driver, TIMEOUT)
+        table_elements = wait.until(     
+            EC.presence_of_all_elements_located((By.CLASS_NAME, class_name))
+        )
+        return table_elements
 
 class Row:
     """A Row is clickable, and has a name and a value."""
@@ -215,7 +248,11 @@ class CollationEngine():
 
         # Calculate Menus
         # TODO: this currently doesn't work for broken-out webpages
-        self.menus = AxisMenu.calculate_all(self.driver, self.webpage_type) 
+        self.menus = AxisMenu.calculate_all(self.driver, self.webpage_type)
+
+        # Calculate tables
+        # TODO: this currently doesn't work for broken-out webpages
+        self.tables = Table.calculate_all(self.driver, self.webpage_type)
 
         # Set Axes
         for i, a in enumerate(self.axes):
@@ -229,38 +266,26 @@ class CollationEngine():
         # close browser
         sleep(10)
         self.driver.close()
-
-    def calculate_tables(self, indices):
-        if 'object' in self.webpage_type:
-            class_name = 'table-fixed'
-            table_type = 'object'
-        elif 'link' in self.webpage_type:
-            class_name = 'Table'
-            table_type = 'link'
-
-        wait = WebDriverWait(self.driver, TIMEOUT)
-        table_elements = wait.until(     
-            EC.presence_of_all_elements_located((By.CLASS_NAME, class_name))
-        )
-
-        for i in indices:
-            self.tables[i] = Table(table_elements[i], table_type)                  #only refresh the tables we need to
     
     def create_dataset(self):
-        self.calculate_tables([0])
-        
         data = {}
-
-        for t1_row in self.tables[0].rows:
+        t1_rows = self.tables[0].rows(recalculate=True, 
+                                      driver=self.driver, 
+                                      webpage_type=self.webpage_type)
+        for t1_row in t1_rows:
             data[t1_row.name] = {}
             t1_row.click()
-            self.calculate_tables([1])
-
-            for t2_row in self.tables[1].rows:    
+            t2_rows = self.tables[1].rows(recalculate=True, 
+                                          driver=self.driver, 
+                                          webpage_type=self.webpage_type)
+            
+            for t2_row in t2_rows:    
                 t2_row.click()
-                self.calculate_tables([2])
+                t3_rows = self.tables[2].rows(recalculate=True,
+                                              driver=self.driver,
+                                              webpage_type=self.webpage_type)
                 data[t1_row.name][t2_row.name] = {
-                    r.name: r.value for r in self.tables[2].rows
+                    r.name: r.value for r in t3_rows
                 }
         self.data = data
         self.df = pd.concat(                # https://stackoverflow.com/a/54300940
