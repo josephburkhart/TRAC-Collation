@@ -78,8 +78,6 @@ class Table:
         n_elements_to_skip = len(row_elements) - len(text_rows)
         row_elements = row_elements[n_elements_to_skip:]                  # currently, the skippable elements are always at the beginning, but this could change later
 
-        print(f"{len(row_elements)=}, {len(text_rows)=}")   # TODO: come back here <---
-
         # Make a Row from each element
         return [Row(e, t, self.table_type) for e, t in zip(row_elements, text_rows)]
 
@@ -254,7 +252,6 @@ class CollationEngine():
         data = {}
 
         for t1_row in self.tables[0].rows:
-            print()
             data[t1_row.name] = {}
             t1_row.click()
             self.calculate_tables([1])
