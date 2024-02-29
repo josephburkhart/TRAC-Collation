@@ -28,7 +28,7 @@ from selenium.webdriver.firefox.options import Options
 WEBPAGE_TYPES = {
     'https://trac.syr.edu/phptools/immigration/closure/': 'object-whole',
     'https://trac.syr.edu/phptools/immigration/backlog/': 'object-broken',
-    'https://trac.syr.edu/phptools/immigration/asylum/': 'object-unified',
+    'https://trac.syr.edu/phptools/immigration/asylum/': 'object-whole',
     'https://trac.syr.edu/phptools/immigration/asylumbl/': 'object-broken',
     'https://trac.syr.edu/phptools/immigration/cbparrest/': 'link-whole',
     'https://trac.syr.edu/phptools/immigration/remove/': 'link-whole',
