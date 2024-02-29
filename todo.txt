@@ -1,4 +1,6 @@
 - [x] move table and row functionality into separate Table class
 - [ ] add support for breakout-tables
+- [ ] add continuous file-writing
+- [ ] add try-except blocks to catch stale reference exceptions and the like
 - [ ] allow user to specify an arbitrary number of axes
-- [ ] add an optimize flag to CollateEngine's __init__ method to indicate whether we should solve for the path through the specified axes that minimizes the number of total clicks/waits
+    - [ ] add an optimize flag to CollateEngine.__init__ to indicate whether we should solve for the path through the specified axes that minimizes the number of total clicks/waits
