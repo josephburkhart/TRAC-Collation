@@ -2,5 +2,6 @@
 - [ ] add support for breakout-tables
 - [ ] add continuous file-writing
 - [ ] add try-except blocks to catch stale reference exceptions and the like
+- [ ] add exceptions to catch when users provide improper axis names
 - [ ] allow user to specify an arbitrary number of axes
     - [ ] add an optimize flag to CollateEngine.__init__ to indicate whether we should solve for the path through the specified axes that minimizes the number of total clicks/waits
