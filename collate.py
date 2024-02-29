@@ -316,6 +316,10 @@ class CollationEngine():
 
         # TODO: rename indices to reflect axis names
             
+        # TODO: sort columns
+        
+        # TODO: replace known duplicates
+            
     def save_dataset(self):
         self.df.to_hdf(self.filename, key='TRACDataset')
 
