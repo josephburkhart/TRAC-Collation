@@ -1,5 +1,5 @@
 # TRAC-Collation
-This repository contains some notebooks for collating data published by the [Transactional Records Access Clearinghouse](https://trac.syr.edu/) (TRAC) in their [immigration toolkit](https://trac.syr.edu/immigration/tools/). This repository is very experimental, and files may change significantly without warning. In the future, I may refactor the notebooks into a proper module or package.
+This repository contains some notebooks for collating data published by the [Transactional Records Access Clearinghouse](https://trac.syr.edu/) (TRAC) in their [immigration toolkit](https://trac.syr.edu/immigration/tools/). This repository is still experimental, and files may change without much warning.
 
 # Requirements
 - selenium 4.17.0 (earlier might work but no guarantees)
@@ -13,8 +13,13 @@ This repository contains some notebooks for collating data published by the [Tra
 5. Open `collate.py`, navigate to the `if __name__ == '__main__'` block at the bottom, and set the parameters as follows:
   -  `url`: the address of the TRAC webpage that you want to collate data from, including the `https://` - for example, `https://trac.syr.edu/phptools/immigration/mpp4/`.
   - `filename`: the name of the HDF file (including the `.hdf` extension) you want the collated data to be saved in. Currently, only HDF file output is supported.
-  - `axes`: the names of the three data axes you want to collate. In the final output dataest, values from the first two will be used as hierarchical indices, while values for the third will be used as columns. Execution will be quicker if the third axis is the one with the greatest number of values. Support for more than three axes might be added later.
+  - `axes`: the names of the three data axes you want to collate. In the final output dataest, values from the first two will be used as hierarchical indices, while values for the third will be used as columns. Support for more than three axes might be added later.
 6. Run `collate.py` from the command line or your IDE.
+
+Note: even when `collate.py` is used with supported TRAC tools, it may still occasionally throw `StaleElementReferenceException` or `NoSuchElementException` when the DOM changes unexpectedly or an element takes a while to load. Functionality that further limits and eliminates such exceptions will be added later. In the meantime, if this is an issue for you, you can try the following:
+  - Try re-running on a better internet connecection.
+  - Try re-running at a time when the TRAC servers are likely to have a low load (e.g., weekends, weekday evenings).
+  - Try re-arranging your names in the `axes` parameter so that the third axis is the one with the greatest number of values. This will decrease both execution time and the required number of interaction events (i.e., clicks and waits), so it will decrease the number of opportunities for an element to not load in properly.
 
 # Which TRAC tools can I use this with?
 ## Supported
