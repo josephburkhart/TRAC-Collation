@@ -328,9 +328,7 @@ class CollationEngine():
 
 if __name__ == '__main__':
     engine = CollationEngine(
-        'https://trac.syr.edu/phptools/immigration/asylum/',
-        # 'https://trac.syr.edu/phptools/immigration/cbparrest/',
-        'test.hdf',
-        axes=['Custody', 'Gender', 'Age']
-        # axes=['Child/Family Group', 'Special Initiatives', 'BP Disposition']
+        url='https://trac.syr.edu/phptools/immigration/asylum/',
+        filename='asylumdecisions.hdf',
+        axes=['Month and Year of Decision', 'Nationality', 'Decision']
     )
