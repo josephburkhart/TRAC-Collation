@@ -1,6 +1,6 @@
 - [x] move table and row functionality into separate Table class
 - [x] add validation for user input
-- [ ] add command line interface
+- [ ] add command line interface (maybe including progress bar)
 - [ ] add support for other browsers (will probably require a config file)
 - [ ] add continuous file-writing
 - [ ] add try-except blocks to catch stale reference exceptions and the like
