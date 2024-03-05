@@ -1,5 +1,5 @@
 - [x] move table and row functionality into separate Table class
-- [ ] add validation for user input
+- [x] add validation for user input
 - [ ] add command line interface
 - [ ] add support for other browsers (will probably require a config file)
 - [ ] add continuous file-writing

@@ -11,6 +11,8 @@ own drop-down menu.
 """
 
 # Browser-agnostic imports
+from pathlib import Path
+import os
 from typing import Literal
 import pandas as pd
 from time import sleep
@@ -49,6 +51,9 @@ WEBPAGE_TYPES = {
     'https://trac.syr.edu/immigration/detentionstats/facilities.html': 'table-only-2',
     'https://trac.syr.edu/immigration/detentionstats/atd_pop_table.html': 'table-only-2'
 }
+
+FULLY_SUPPORTED_TYPES = ['object-whole', 'link-whole']
+PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 
 TIMEOUT = 10
 
@@ -229,6 +234,10 @@ class AxisMenu:
         elif webpage_type == 'link-broken':
             pass        #TODO: add this
         return menus
+    
+    @property
+    def option_names(self):
+        return [o.name for o in self.options]
 
 class Option:
     """An Option is clickable and has a name."""
@@ -245,14 +254,54 @@ class CollationEngine():
     # to the axes selected in the browser for the three tables (left to right).
     # In future versions, I want the user to be able to specify an arbitrary number
     # of axes, and have the engine construct a dataset that includes all of them.
-    def __init__(self, url, filename, axes, headless: bool=False):
+    def __init__(self, url: str, filename: str | Path, axes: list[str], headless: bool=False):
+        # Check for valid filename type
+        if type(filename) not in (str, type(Path())):
+            raise TypeError(f"filename must be of type str or Path")
+
+        # Make path of output file absolute
+        filename = Path(filename)
+        if not filename.is_absolute():
+            filename = filename.resolve()
+
+        # Check that we have permission to write the output file
+        testfilename = filename.parent / 'test.txt'
+        try:
+            testfile = open(testfilename, 'w')
+        except (OSError, IOError):
+            msg = f"Error: Cannot write a file to the folder {filename.parent}."
+            msg += "\nPlease enter a different value for `filename`."
+            print(msg)
+            quit()
+        else:
+            testfile.close()
+            try:
+                os.remove(testfilename)
+            except OSError:
+                msg = f"Warning: temporary file could not be deleted: {testfilename}"
+                msg += "\nPlease delete file manually after execution is complete."
+                print(msg)
+        
+        # Check for valid URL
+        if WEBPAGE_TYPES[url] not in FULLY_SUPPORTED_TYPES:
+            if WEBPAGE_TYPES[url] in PARTIALLY_SUPPORTED_TYPES:
+                print("Warning: URL is not fully supported. Retrieving anyway...")
+            elif url in WEBPAGE_TYPES.keys():
+                raise ValueError("URL is not supported")
+            else:
+                raise ValueError("URL is not recognized")
+            
+        # Check for valid headless flag
+        if type(headless) != bool:
+            raise TypeError("headless must be of type bool")
+        
         # Initialize Driver
         options = Options()
         if headless:
             options.add_argument('--headless')
         self.driver = Firefox(options=options)
         self.driver.get(url)
-
+        
         # Set instance attributes
         self.filename = filename
         self.axes = axes
@@ -269,6 +318,15 @@ class CollationEngine():
         # TODO: this currently doesn't work for broken-out webpages
         self.tables = Table.calculate_all(self.driver, self.webpage_type)
 
+        # Check for valid input axis names
+        # Note: technically, all menus should have the same options, but this
+        #       will not always be the case if support is added for more webpage
+        #       types, so all menus will be checked
+        for m in self.menus:
+            for a in self.axes:
+                if a not in m.option_names:
+                    raise ValueError(f"Axis name {a} could not be found")
+
         # Set Axes
         for i, a in enumerate(self.axes):
             self.menus[i].set_to(a)
@@ -281,7 +339,7 @@ class CollationEngine():
         # close browser
         sleep(10)
         self.driver.close()
-    
+
     def create_dataset(self):
         data = {}
         t1_rows = self.tables[0].rows(recalculate=True, 
@@ -295,7 +353,7 @@ class CollationEngine():
                                           webpage_type=self.webpage_type)
             
             for t2_row in t2_rows:    
-                t2_row.click()
+                t2_row.click()   # StaleElementReferenceException sometimes is thrown here
                 t3_rows = self.tables[2].rows(recalculate=True,
                                               driver=self.driver,
                                               webpage_type=self.webpage_type)
