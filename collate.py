@@ -16,6 +16,7 @@ import os
 from typing import Literal
 import pandas as pd
 from time import sleep
+from tqdm import tqdm
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -341,18 +342,25 @@ class CollationEngine():
         self.driver.close()
 
     def create_dataset(self):
+        pbar_format = "{desc}{percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt}"
+
         data = {}
         t1_rows = self.tables[0].rows(recalculate=True, 
                                       driver=self.driver, 
                                       webpage_type=self.webpage_type)
-        for t1_row in t1_rows:
+        
+        for t1_row in (pbar1 := tqdm(t1_rows, bar_format=pbar_format)):  #https://stackoverflow.com/a/45519268/15426433
+            pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
+
             data[t1_row.name] = {}
             t1_row.click()
             t2_rows = self.tables[1].rows(recalculate=True, 
                                           driver=self.driver, 
                                           webpage_type=self.webpage_type)
             
-            for t2_row in t2_rows:    
+            for t2_row in (pbar2 := tqdm(t2_rows, leave=False, bar_format=pbar_format)):
+                pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
+
                 t2_row.click()   # StaleElementReferenceException sometimes is thrown here
                 t3_rows = self.tables[2].rows(recalculate=True,
                                               driver=self.driver,
@@ -397,11 +405,24 @@ class CollationEngine():
     def save_dataset(self):
         self.df.to_hdf(self.filename, key='TRACDataset')
 
+def shorten(text, 
+            text_limit=24, 
+            terminator='...', 
+            delimiter='',
+            padding=' ',
+            pad_limit=25):
+    """Shorten a string to the specified limit, adding additional padding."""
+    if len(text) > text_limit:
+        text = text[:text_limit - 1 - len(terminator)] + terminator + delimiter
+    
+    text += delimiter + (padding * (pad_limit - len(text)))
+    return text
 
 
 if __name__ == '__main__':
     engine = CollationEngine(
         url='https://trac.syr.edu/phptools/immigration/asylum/',
         filename='asylumdecisions.hdf',
-        axes=['Month and Year of Decision', 'Nationality', 'Decision']
+        axes=['Month and Year of Decision', 'Nationality', 'Decision'],
+        headless=True
     )

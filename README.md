@@ -4,6 +4,7 @@ This repository contains a tool for collating data published by the [Transaction
 # Requirements
 - selenium 4.17.0 (earlier might work but no guarantees)
 - pandas 2.2.0 (earlier will probably work)
+- tqdm
 
 # Usage
 1. Set up an environment with pandas and selenium (for conda instructions, see [here](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html)).
