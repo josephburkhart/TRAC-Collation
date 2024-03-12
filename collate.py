@@ -11,9 +11,10 @@ own drop-down menu.
 """
 
 # Browser-agnostic imports
+# Note: Browser-specific imports are handled in CollateEngine.get_driver()
 from pathlib import Path
 import os
-from typing import Literal, Optional
+from typing import Literal, Optional, get_args
 import pandas as pd
 from time import sleep
 from tqdm import tqdm
@@ -23,11 +24,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-
-# Browser-specific imports
-# TODO: conditional import based on user's choice of browser
-from selenium.webdriver import Firefox                  
-from selenium.webdriver.firefox.options import Options
 
 # WEBDRIVER_PATH = None
 WEBPAGE_TYPES = {
@@ -59,6 +55,8 @@ FULLY_SUPPORTED_TYPES = ['object-whole', 'link-whole']
 PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 
 TIMEOUT = 10
+
+SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
 class DatasetException(Exception):
     def __init__(self, data, current_t1_row, current_t2_row):
@@ -252,7 +250,7 @@ class Option:
     """An Option is clickable and has a name."""
     def __init__(self, clickable_web_element):
         self.clickable_element = clickable_web_element
-        self.name = clickable_web_element.text
+        self.name = clickable_web_element.text  #StaleElementReferenceException can get thrown here
     
     def click(self):
         self.clickable_element.click()
@@ -263,61 +261,22 @@ class CollationEngine():
     # to the axes selected in the browser for the three tables (left to right).
     # In future versions, I want the user to be able to specify an arbitrary number
     # of axes, and have the engine construct a dataset that includes all of them.
-    def __init__(self, url: str, filename: str | Path, axes: list[str], headless: bool=False):
-        # Check for valid filename type
-        if type(filename) not in (str, type(Path())):
-            raise TypeError(f"filename must be of type str or Path")
-
-        # Make path of output file absolute
-        filename = Path(filename)
-        if not filename.is_absolute():
-            filename = filename.resolve()
-
-        # Check that we have permission to write the output file
-        testfilename = filename.parent / 'test.txt'
-        try:
-            testfile = open(testfilename, 'w')
-        except (OSError, IOError):
-            msg = f"Error: Cannot write a file to the folder {filename.parent}."
-            msg += "\nPlease enter a different value for `filename`."
-            print(msg)
-            quit()
-        else:
-            testfile.close()
-            try:
-                os.remove(testfilename)
-            except OSError:
-                msg = f"Warning: temporary file could not be deleted: {testfilename}"
-                msg += "\nPlease delete file manually after execution is complete."
-                print(msg)
-        
-        # Check for valid URL
-        if WEBPAGE_TYPES[url] not in FULLY_SUPPORTED_TYPES:
-            if WEBPAGE_TYPES[url] in PARTIALLY_SUPPORTED_TYPES:
-                print("Warning: URL is not fully supported. Retrieving anyway...")
-            elif url in WEBPAGE_TYPES.keys():
-                raise ValueError("URL is not supported")
-            else:
-                raise ValueError("URL is not recognized")
-            
-        # Check for valid headless flag
-        if type(headless) != bool:
-            raise TypeError("headless must be of type bool")
-        
-        # Initialize Driver
-        options = Options()
-        if headless:
-            options.add_argument('--headless')
-        self.driver = Firefox(options=options)
-        self.driver.get(url)
+    def __init__(self, browser: SUPPORTED_BROWSERS, url: str, 
+                 filename: str | Path, axes: list[str], headless: bool=False):
+        # Validate Input
+        self.validate_input(browser, url, filename, axes, headless)
         
         # Set instance attributes
+        self.driver = self.get_driver(browser, headless)
         self.filename = filename
         self.axes = axes
         self.tables = [None, None, None]
 
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
+
+        # Go to webpage
+        self.driver.get(url)
 
         # Calculate Menus
         # TODO: this currently doesn't work for broken-out webpages
@@ -359,6 +318,90 @@ class CollationEngine():
         # close browser
         sleep(10)
         self.driver.close()
+
+    def validate_input(self, browser: SUPPORTED_BROWSERS, url: str, 
+                       filename: str | Path, axes: list[str], headless: bool):
+        """Check that input parameters are valid."""
+        # Check for valid browser
+        if browser not in get_args(SUPPORTED_BROWSERS):
+            msg = "browser must be one of the following: "
+            msg += ', '.join(get_args(SUPPORTED_BROWSERS))
+            raise TypeError(msg)
+        
+        # Check for valid filename type
+        if type(filename) not in (str, type(Path())):
+            raise TypeError(f"filename must be of type str or Path")
+
+        # Make path of output file absolute
+        filename = Path(filename)
+        if not filename.is_absolute():
+            filename = filename.resolve()
+
+        # Check that we have permission to write the output file
+        testfilename = filename.parent / 'test.txt'
+        try:
+            testfile = open(testfilename, 'w')
+        except (OSError, IOError):
+            msg = f"Error: Cannot write a file to the folder {filename.parent}."
+            msg += "\nPlease enter a different value for `filename`."
+            print(msg)
+            quit()
+        else:
+            testfile.close()
+            try:
+                os.remove(testfilename)
+            except OSError:
+                msg = f"Warning: temporary file could not be deleted: {testfilename}"
+                msg += "\nPlease delete file manually after execution is complete."
+                print(msg)
+        
+        # Check for valid URL
+        if WEBPAGE_TYPES[url] not in FULLY_SUPPORTED_TYPES:
+            if WEBPAGE_TYPES[url] in PARTIALLY_SUPPORTED_TYPES:
+                print("Warning: URL is not fully supported. Retrieving anyway...")
+            elif url in WEBPAGE_TYPES.keys():
+                raise ValueError("URL is not supported")
+            else:
+                raise ValueError("URL is not recognized")
+            
+        # Check for valid headless flag
+        if type(headless) != bool:
+            raise TypeError("headless must be of type bool")
+        
+
+    def get_driver(self, browser: SUPPORTED_BROWSERS, headless):
+        """Import necessary classes and return webdriver for the chosen browser."""
+        if browser == 'Firefox':
+            from selenium.webdriver import Firefox                  
+            from selenium.webdriver.firefox.options import Options
+            options = Options()
+            if headless:
+                options.add_argument('--headless')
+            return Firefox(options=options)
+        
+        elif browser == 'Chrome':
+            from selenium.webdriver import Chrome
+            from selenium.webdriver.chrome.options import Options
+            options = Options()
+            if headless:
+                options.add_argument('--headless')
+            return Chrome(options=options)
+        
+        elif browser == 'Edge':
+            from selenium.webdriver import Edge
+            from selenium.webdriver.edge.options import Options
+            options = Options()
+            if headless:
+                options.add_argument('--headless')
+            return Edge(options=options)
+
+        elif browser == 'Safari':
+            from selenium.webdriver import Safari
+            from selenium.webdriver.safari.options import Options
+            options = Options()
+            if headless:
+                options.add_argument('--headless')
+            return Safari(options=options)
 
     def create_dataset(self,
                        data: Optional[dict | None] = None, 
@@ -492,8 +535,9 @@ def shorten(text,
 
 if __name__ == '__main__':
     engine = CollationEngine(
+        browser='Edge',
         url='https://trac.syr.edu/phptools/immigration/asylum/',
         filename='asylumdecisions.hdf',
         axes=['Fiscal Year of Decision', 'Nationality', 'Decision'],
-        headless=True
+        headless=False
     )
