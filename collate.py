@@ -13,10 +13,12 @@ own drop-down menu.
 # Browser-agnostic imports
 from pathlib import Path
 import os
-from typing import Literal
+from typing import Literal, Optional
 import pandas as pd
 from time import sleep
 from tqdm import tqdm
+import json
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -57,6 +59,12 @@ FULLY_SUPPORTED_TYPES = ['object-whole', 'link-whole']
 PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 
 TIMEOUT = 10
+
+class DatasetException(Exception):
+    def __init__(self, dump_file, current_t1_row, current_t2_row):
+        self.dump_file = dump_file
+        self.current_t1_row = current_t1_row
+        self.current_t2_row = current_t2_row
 
 class Table:
     """A Table is a collection of Rows."""
@@ -333,7 +341,19 @@ class CollationEngine():
             self.menus[i].set_to(a)
 
         # Dataset
-        self.create_dataset()
+        current_t1_row = None
+        current_t2_row = None
+        dump_file = None
+        while True:
+            try:
+                self.create_dataset(dump_file, current_t1_row, current_t2_row)
+            except DatasetException as e:
+                dump_file = e.dump_file
+                current_t1_row = e.current_t1_row
+                current_t2_row = e.current_t2_row
+
+            else:
+                break
         self.clean_dataset()
         self.save_dataset()
     
@@ -341,33 +361,106 @@ class CollationEngine():
         sleep(10)
         self.driver.close()
 
-    def create_dataset(self):
-        pbar_format = "{desc}{percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt}"
+    def create_dataset(self,
+                       dump_file: Optional[str | Path] = None, 
+                       current_t1_row: Optional[int | None] = None, 
+                       current_t2_row: Optional[int | None] = None):
+        """
+        Create a dataset of nested dictionaries from the webpage.
+        
+        If called with its optional parameters, this method will initialize the 
+        dataset from a json file specified by `dump_file`, and only
+        get data from rows including and after `current_t1_row` (for Table 1)
+        and `current_t2_row` for (Table 2).
 
-        data = {}
+        Raises DatasetException if a stale element reference is found.
+        """
+        # Set progress bar formatting
+        pbar_format = "{desc}{percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt}"
+
+        # If data was dumped previously, initialize dataset from it, then
+        # delete the dump file if possible
+        if dump_file != None:
+            with open(dump_file, 'r') as f:
+                data = json.load(f)
+            try:
+                os.remove(dump_file)
+            except OSError:
+                msg = f"Warning: dump file could not be deleted: {dump_file}"
+                msg += "\nPlease delete file manually after execution is complete."
+                print(msg)
+        else:
+            data = {}
+        
+        # Calculate rows for table 1, skipping ones previously clicked if necessary
         t1_rows = self.tables[0].rows(recalculate=True, 
                                       driver=self.driver, 
                                       webpage_type=self.webpage_type)
+        if current_t1_row != None:
+            t1_rows = t1_rows[current_t1_row:]
         
-        for t1_row in (pbar1 := tqdm(t1_rows, bar_format=pbar_format)):  #https://stackoverflow.com/a/45519268/15426433
+        # Iterate over un-clicked table 1 rows
+        pbar1 = tqdm(t1_rows, leave=False, bar_format=pbar_format)
+        for i, t1_row in enumerate(pbar1):  #https://stackoverflow.com/a/45519268/15426433
             pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
 
-            data[t1_row.name] = {}
-            t1_row.click()
+            # Only initialize an empty dict if no table 2 rows were
+            # previously clicked
+            if t1_row.name not in data.keys():
+                data[t1_row.name] = {}
+
+            # Try clicking, and if unsuccessful then dump data to file and
+            # pass row indices and dump file name to exception
+            try:
+                t1_row.click()
+            except StaleElementReferenceException:  #TODO: put this in a method
+                print('here')
+                msg = f'\nEncountered a stale reference at {t1_row.name=}. '
+                msg += 'Dumping data to file and restarting from current row.\n'
+                print(msg)
+
+                dump_file = f'data-up-to_T1-{t1_row.name}.json'
+                with open(dump_file, 'w') as f:
+                    json.dump(data, f)
+
+                raise DatasetException(dump_file, i, None)
+
+            # Calculate rows for table 2, skipping ones previously clicked if necessary
             t2_rows = self.tables[1].rows(recalculate=True, 
                                           driver=self.driver, 
                                           webpage_type=self.webpage_type)
+            if current_t2_row != None:
+                t2_rows = t2_rows[current_t2_row:]
             
-            for t2_row in (pbar2 := tqdm(t2_rows, leave=False, bar_format=pbar_format)):
+            # Iterate over un-clicked table 2 rows
+            pbar2 = tqdm(t2_rows, leave=False, bar_format=pbar_format)
+            for j, t2_row in enumerate(pbar2):
                 pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
+            
+                # Try clicking, and if unsuccessful then dump data to file and
+                # pass row indices and dump file name to exception
+                try:
+                    t2_row.click()
+                except StaleElementReferenceException:  #TODO: put this in a method
+                    msg = f'\nEncountered a stale reference at {t2_row.name=}. '
+                    msg += 'Dumping data to file and restarting from current row.\n'
+                    print(msg)
 
-                t2_row.click()   # StaleElementReferenceException sometimes is thrown here
+                    dump_file = f'data-up-to_T1-{t1_row.name}_T2-{t2_row.name}.json'
+                    with open(dump_file, 'w') as f:
+                        json.dump(data, f)
+
+                    raise DatasetException(dump_file, i, j)
+
+                # Copy rows from table 3 into the data dictionary
                 t3_rows = self.tables[2].rows(recalculate=True,
                                               driver=self.driver,
                                               webpage_type=self.webpage_type)
                 data[t1_row.name][t2_row.name] = {
                     r.name: r.value for r in t3_rows
                 }
+        
+        # Save data as attribute and convert to dataframe
         self.data = data
         self.df = pd.concat(                # https://stackoverflow.com/a/54300940
             {k: pd.DataFrame(v).T for k, v in data.items()}, 
