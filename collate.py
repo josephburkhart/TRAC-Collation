@@ -61,8 +61,8 @@ PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 TIMEOUT = 10
 
 class DatasetException(Exception):
-    def __init__(self, dump_file, current_t1_row, current_t2_row):
-        self.dump_file = dump_file
+    def __init__(self, data, current_t1_row, current_t2_row):
+        self.data = data
         self.current_t1_row = current_t1_row
         self.current_t2_row = current_t2_row
 
@@ -341,17 +341,16 @@ class CollationEngine():
             self.menus[i].set_to(a)
 
         # Dataset
+        data = None
         current_t1_row = None
         current_t2_row = None
-        dump_file = None
         while True:
             try:
-                self.create_dataset(dump_file, current_t1_row, current_t2_row)
+                self.create_dataset(data, current_t1_row, current_t2_row)
             except DatasetException as e:
-                dump_file = e.dump_file
+                data = e.data
                 current_t1_row = e.current_t1_row
                 current_t2_row = e.current_t2_row
-
             else:
                 break
         self.clean_dataset()
@@ -362,34 +361,24 @@ class CollationEngine():
         self.driver.close()
 
     def create_dataset(self,
-                       dump_file: Optional[str | Path] = None, 
+                       data: Optional[dict | None] = None, 
                        current_t1_row: Optional[int | None] = None, 
                        current_t2_row: Optional[int | None] = None):
         """
         Create a dataset of nested dictionaries from the webpage.
         
         If called with its optional parameters, this method will initialize the 
-        dataset from a json file specified by `dump_file`, and only
-        get data from rows including and after `current_t1_row` (for Table 1)
-        and `current_t2_row` for (Table 2).
+        dataset with the provided dictionary `data`, and only get data from rows
+        including and after `current_t1_row` (for Table 1) and `current_t2_row`
+        for (Table 2).
 
         Raises DatasetException if a stale element reference is found.
         """
         # Set progress bar formatting
         pbar_format = "{desc}{percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt}"
 
-        # If data was dumped previously, initialize dataset from it, then
-        # delete the dump file if possible
-        if dump_file != None:
-            with open(dump_file, 'r') as f:
-                data = json.load(f)
-            try:
-                os.remove(dump_file)
-            except OSError:
-                msg = f"Warning: dump file could not be deleted: {dump_file}"
-                msg += "\nPlease delete file manually after execution is complete."
-                print(msg)
-        else:
+        # If data was provided, initialize dataset from it
+        if data == None:
             data = {}
         
         # Calculate rows for table 1, skipping ones previously clicked if necessary
@@ -409,21 +398,15 @@ class CollationEngine():
             if t1_row.name not in data.keys():
                 data[t1_row.name] = {}
 
-            # Try clicking, and if unsuccessful then dump data to file and
-            # pass row indices and dump file name to exception
+            # Try clicking, and if unsuccessful then raise an exception that
+            # contains the information needed to re-start from this row
             try:
                 t1_row.click()
             except StaleElementReferenceException:  #TODO: put this in a method
-                print('here')
                 msg = f'\nEncountered a stale reference at {t1_row.name=}. '
-                msg += 'Dumping data to file and restarting from current row.\n'
+                msg += 'Restarting from current row.\n'
                 print(msg)
-
-                dump_file = f'data-up-to_T1-{t1_row.name}.json'
-                with open(dump_file, 'w') as f:
-                    json.dump(data, f)
-
-                raise DatasetException(dump_file, i, None)
+                raise DatasetException(data, i, None)
 
             # Calculate rows for table 2, skipping ones previously clicked if necessary
             t2_rows = self.tables[1].rows(recalculate=True, 
@@ -437,20 +420,15 @@ class CollationEngine():
             for j, t2_row in enumerate(pbar2):
                 pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
             
-                # Try clicking, and if unsuccessful then dump data to file and
-                # pass row indices and dump file name to exception
+            # Try clicking, and if unsuccessful then raise an exception that
+            # contains the information needed to re-start from this row
                 try:
                     t2_row.click()
                 except StaleElementReferenceException:  #TODO: put this in a method
                     msg = f'\nEncountered a stale reference at {t2_row.name=}. '
-                    msg += 'Dumping data to file and restarting from current row.\n'
+                    msg += 'Restarting from current row.\n'
                     print(msg)
-
-                    dump_file = f'data-up-to_T1-{t1_row.name}_T2-{t2_row.name}.json'
-                    with open(dump_file, 'w') as f:
-                        json.dump(data, f)
-
-                    raise DatasetException(dump_file, i, j)
+                    raise DatasetException(data, i, j)
 
                 # Copy rows from table 3 into the data dictionary
                 t3_rows = self.tables[2].rows(recalculate=True,
@@ -516,6 +494,6 @@ if __name__ == '__main__':
     engine = CollationEngine(
         url='https://trac.syr.edu/phptools/immigration/asylum/',
         filename='asylumdecisions.hdf',
-        axes=['Month and Year of Decision', 'Nationality', 'Decision'],
+        axes=['Fiscal Year of Decision', 'Nationality', 'Decision'],
         headless=True
     )
