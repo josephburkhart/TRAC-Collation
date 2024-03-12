@@ -2,8 +2,7 @@
 - [x] add validation for user input
 - [ ] add command line interface (maybe including progress bar)
 - [ ] add support for other browsers (will probably require a config file)
-- [ ] add continuous file-writing
-- [ ] add try-except blocks to catch stale reference exceptions and the like
+- [x] add try-except blocks to catch stale reference exceptions and the like
 - [ ] add support for other webpage types
 - [ ] allow user to specify an arbitrary number of axes
     - [ ] add an optimize flag to CollateEngine.__init__ to indicate whether we should solve for the path through the specified axes that minimizes the number of total clicks/waits
