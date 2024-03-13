@@ -19,7 +19,7 @@ import pandas as pd
 from time import sleep
 from tqdm import tqdm
 import json
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException, NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -66,115 +66,230 @@ class DatasetException(Exception):
 
 class Table:
     """A Table is a collection of Rows."""
-    def __init__(self, web_element, table_type: Literal['object', 'link'], index):
-        # Set instance attributes
-        self.web_element = web_element
-        self._rows = None
+    def __init__(self, driver, table_index: int, table_type: Literal['object', 'link']):
+        # Set initial instance attributes
+        self.driver = driver
+        self.table_index = table_index
         self.table_type = table_type
-        self.index = index
+       
+        # Set private/container instance attributes
+        self._web_element = None
+        self._text_rows = []
+        self._rows = []
+        
+        # Set instance table query attribute based on the table type
+        if table_type == 'object':
+            self.table_query = (By.CLASS_NAME, 'table-fixed')
+        elif table_type == 'link':
+            self.table_query = (By.CLASS_NAME, 'Table')
 
-    def rows(self, recalculate: bool = False, driver=None, webpage_type=None):
-        # Only calculate rows when asked to
-        # https://stackoverflow.com/a/69379239/15426433
-        # Note: if recalculate is True, driver and webpage_type are required
-        if self._rows is None or recalculate:
-            self._rows = self.calculate_rows(refresh_table=recalculate,
-                                             driver=driver,
-                                             webpage_type=webpage_type)
+        # Set instance row query attribute based on the table type
+        if self.table_type == 'object':
+            self.row_query = (By.CLASS_NAME, 'flex-row')
+        elif self.table_type == 'link':
+            self.row_query = (By.XPATH, ".//tr")
+
+        # Set instance row clickable element query attribute based on table type
+        if self.table_type == 'object':
+            self.row_clickable_query = None #because row_query is already clickable
+        elif self.table_type == 'link':
+            self.row_clickable_query = (By.XPATH, ".//td[@class='Data l']/a")
+
+    @property
+    def text_rows(self):
+        """
+        List of strings representing the useful rows from the table, without
+        leading and trailing whitespace, and without headers.
+        """
+        if self._text_rows == []:
+            # Get text, filter for meaninful rows
+            def is_meaningful(text):
+                return (text != '' and 'All' not in text and 'Total' not in text)
+            try:
+                self._text_rows = self.web_element.text.split('\n')
+            except StaleElementReferenceException:
+                self.recalculate_web_element()
+                self._text_rows = self.web_element.text.split('\n')
+            self._text_rows = [r for r in self._text_rows if is_meaningful(r)]
+        return self._text_rows
+    
+    def recalculate_text_rows(self):
+        self._text_rows = []
+        self._text_rows = self.text_rows
+    
+    @property
+    def rows(self):
+        """
+        List of Row objects for the table, of the same length as text_rows.
+        """
+        # Calculate rows if necessary
+        if self._rows == []:
+            # In object-type tables, text_rows are currently offset by 4 
+            # (1-3 are empty, 4 is header) (NOTE: this could change)
+            if self.table_type == 'object':
+                self._rows = [Row(self, i+4, self.row_query) for i in range(len(self.text_rows))]
+            
+            # In link-type tables, text_rows are currently offset by 2 (header) 
+            # (NOTE: this could change)
+            elif self.table_type == 'link':
+                self._rows = [Row(self, i+2, self.row_query) for i in range(len(self.text_rows))]
+
+            # I don't understand why, but sometimes the lengths of text_rows
+            # and rows are different. This makes sure they are the same.
+            #       TODO: come up with a better fix
+            if len(self._rows) > len(self.text_rows):
+                for i in range(len(self._rows) - len(self.text_rows)):
+                    _ = self._rows.pop(-1)
+            
         return self._rows
     
-    def calculate_rows(self, refresh_table: bool = False, driver=None, webpage_type=None):
-        # If table has been refreshed, calculate a new web element
-        # Note: if refresh_table is True, driver and webpage_type are required
-        if refresh_table:
-            table_elements = Table.calculate_web_elements(driver, webpage_type)
-            self.web_element = table_elements[self.index]
+    def recalculate_rows(self):
+        self._rows = []
+        self._rows = self.rows  # better way to use setter?
 
-        # Get elements for all rows
-        # Note: Chrome and Edge can encounter stale element references when 
-        #       the webpage is of type 'object-whole', so the calculation is 
-        #       wrapped in a while-try-except-else block
-        # Note: 
-        while True:
+    def calculate_all_row_web_elements(self):
+        # Calculate rows if necessary
+        if self._rows == []:
+            self.recalculate_rows()
+      
+        # Calculate all row elements
+        wait = WebDriverWait(self.web_element, TIMEOUT)
+        new_row_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_query))
+
+        # Re-assign row elements
+        for r in self._rows:
+            r.web_element = new_row_web_elements[r.row_index]      
+
+    def calculate_all_row_clickable_web_elements(self):
+        # Calculate rows if necessary
+        if self._rows == []:
+            self.recalculate_rows()
+      
+        # Rows for which web_element is already clickable
+        if self.row_clickable_query == None:
+            if self._rows[0]._web_element == None:  #TODO: stick to public attrs
+                self.calculate_all_row_web_elements()
+            else:
+                for r in self._rows:
+                    r.clickable_web_element = r.web_element
+        
+        else:
+            # Calculate all clickable row elements
+            wait = WebDriverWait(self.web_element, TIMEOUT)
+            new_row_clickable_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_clickable_query))
+
+            # Re-assign clickable row elements
+            for r in self._rows:        #TODO: self._rows or self.rows???
+                r.clickable_web_element = new_row_clickable_web_elements[r.row_index]   #TODO: check indexing
+
+    @property
+    def web_element(self):
+        """
+        Web element for the table in the DOM. Recalculated if necessary.
+        """
+        if self._web_element == None:
+            self._web_element = self.get_web_element(self.driver)
+        return self._web_element
+    
+    def get_web_element(self, driver, fail_cap: int = -1):
+        """
+        Find the web element for the table. By default, the driver will keep 
+        polling the DOM indefinitely until it finds the table. Set a `fail_cap`
+        to a positive value to limit the number of times the DOM can be polled.
+        """
+        wait = WebDriverWait(driver, TIMEOUT)
+        fail_count = 0
+        while fail_count < fail_cap or fail_cap < 0:
             try:
-                wait = WebDriverWait(self.web_element, TIMEOUT)
-                if self.table_type == 'object':
-                    row_elements = wait.until(EC.presence_of_all_elements_located(
-                            (By.CLASS_NAME, 'flex-row')
-                        )
-                    )
-                elif self.table_type == 'link':
-                    row_elements = wait.until(
-                        EC.presence_of_all_elements_located(
-                            (By.XPATH, ".//tr")
-                        )
-                    )
-
-                # Filter out meaningless elements
-                def is_meaningful(text):
-                    return (text != '' and 'All' not in text and 'Total' not in text)
-                text_rows = self.web_element.text.split('\n')
-
-                text_indices_to_skip = [i for i, r in enumerate(text_rows) if not is_meaningful(r)]
-                text_rows = [r for i, r in enumerate(text_rows) if i not in text_indices_to_skip]
-                # n_elements_to_skip = len(row_elements) - len(text_rows)
-                # row_elements = row_elements[n_elements_to_skip:]                  #these lines are replaced with the next line to keep Chrome and Edge from miscalculating rows
-                row_elements = [e for e in row_elements if e.text in text_rows]
-
-        # Make a Row from each element
-        # print(f"{len(row_elements)=}, {len(text_rows)=}")
-            except StaleElementReferenceException:
+                table_elements = wait.until(EC.presence_of_all_elements_located(self.table_query))
+            except TimeoutException:
+                print(f'Warning: table not found. Trying again... ({fail_count = })')
+                fail_count += 1
                 continue
             else:
-                rows = [Row(e, t, self.table_type) for e, t in zip(row_elements, text_rows, strict=True)]
-                del row_elements, text_rows
-                return rows
+                return table_elements[self.table_index]
     
-    @staticmethod
-    def calculate_all(driver, webpage_type):
-        # Helper method that just calls calculate but in a more friendly way
-        if 'object' in webpage_type:
-            table_type = 'object'
-        elif 'link' in webpage_type:
-            table_type = 'link'
-        table_elements = Table.calculate_web_elements(driver, webpage_type)
-        return [Table(e, table_type, i) for i, e in enumerate(table_elements)]
-    
-    @staticmethod
-    def calculate_web_elements(driver, webpage_type):
-        # Calculate a single Table for a given index
-        # If index is None, all Tables will be returned
-        if 'object' in webpage_type:
-            class_name = 'table-fixed'
-        elif 'link' in webpage_type:
-            class_name = 'Table'
-
-        wait = WebDriverWait(driver, TIMEOUT)
-        table_elements = wait.until(     
-            EC.presence_of_all_elements_located((By.CLASS_NAME, class_name))
-        )
-        return table_elements
+    def recalculate_web_element(self):
+        self._web_element = None
+        self._web_element = self.web_element    # better way to use setter?
 
 class Row:
-    """A Row is clickable, and has a name and a value."""
-    def __init__(self, web_element, text, table_type: Literal['object', 'link']):
-        # Set instance attributes
-        self.table_type = table_type
-        self.web_element = web_element
-        self.name, self.value = text.rsplit(' ', 1)
-        self.value = int(self.value.replace(',', ''))
+    """A Row is clickable."""
+    def __init__(self, parent_table: Table, row_index: int, query: tuple):
+        # Set initial instance attributes
+        self.parent_table = parent_table
+        self.row_index = row_index
+        self.query = query
+
+        # Set private/container instance attributes
+        self._web_element = None
+        self._clickable_web_element = None
+        self._name = None
+
+    @property
+    def web_element(self):
+        if self._web_element == None:
+            self._web_element = self.get_web_element()
+        return self._web_element
+    
+    @web_element.setter
+    def web_element(self, e):
+        self._web_element = e
+        self.recalculate_name()
+
+    def get_web_element(self, fail_cap: int = -1, recalculate_table_element: bool = False):
+        fail_count = 0
+        while fail_count < fail_cap or fail_cap < 0:
+            try:
+                wait = WebDriverWait(self.parent_table.web_element, TIMEOUT)
+                elements = wait.until(EC.presence_of_all_elements_located(self.query))
+            except (TimeoutException, NoSuchElementException) as e:
+                print(f'Warning: {type(e)} was encountered - row could not be found. Trying again... ({fail_count = })')
+                if recalculate_table_element:
+                    self.parent_table.recalculate_web_element()
+            else:
+                return elements[self.row_index]
+    
+    @property
+    def clickable_web_element(self):
+        # Recalculate clickable element if necessary
+        if self._clickable_web_element == None:
+            # Row queries defined in Table.rows correspond to the following:
+            # object rows are already clickable
+            if self.parent_table.table_type == 'object':
+                self._clickable_web_element = self.web_element
+            
+            # link rows must be further searched to find the clickable links
+            elif self.parent_table.table_type == 'link':
+                wait = WebDriverWait(self.web_element, TIMEOUT)
+                self._clickable_web_element = wait.until(
+                    EC.presence_of_element_located(
+                        (By.XPATH, ".//td[@class='Data l']/a")
+                    )
+                )
+        
+        return self._clickable_web_element
+    
+    @clickable_web_element.setter
+    def clickable_web_element(self, e):
+        self._clickable_web_element = e
+    
+    def recalculate_clickable_web_element(self):
+        self._clickable_web_element = None
+        self._clickable_web_element = self.clickable_web_element
     
     def click(self):
-        if self.table_type == 'object':
-            self.web_element.click()
-        elif self.table_type == 'link':
-            wait = WebDriverWait(self.web_element, TIMEOUT)
-            clickable_element = wait.until(
-                EC.presence_of_element_located(
-                    (By.XPATH, ".//td[@class='Data l']/a")
-                )
-            )
-            clickable_element.click()
+        self.clickable_web_element.click()
+    
+    @property
+    def name(self):
+        if self._name == None:
+            self._name = self.web_element.text.rsplit(' ', 1)[0]
+        return self._name
+    
+    def recalculate_name(self):
+        self._name = None
+        self._name = self.name
 
 class AxisMenu:
     """An AxisMenu is a clickable collection of Options."""
@@ -299,6 +414,7 @@ class CollationEngine():
         self.validate_input(browser, url, filename, axes, headless)
         
         # Set instance attributes
+        self.browser = browser
         self.driver = self.get_driver(browser, headless)
         self.filename = filename
         self.axes = axes
@@ -316,7 +432,11 @@ class CollationEngine():
 
         # Calculate tables
         # TODO: this currently doesn't work for broken-out webpages
-        self.tables = Table.calculate_all(self.driver, self.webpage_type)
+        if self.webpage_type in ('object-whole', 'object-broken'):
+            table_type = 'object'
+        elif self.webpage_type in ('link-whole', 'link-broken'):
+            table_type = 'link'
+        self.tables = [Table(self.driver, i, table_type) for i in range(3)]
 
         # Check for valid input axis names
         # Note: technically, all menus should have the same options, but this
@@ -332,18 +452,7 @@ class CollationEngine():
             self.menus[i].set_to(a)
 
         # Dataset
-        data = None
-        current_t1_row = None
-        current_t2_row = None
-        while True:
-            try:
-                self.create_dataset(data, current_t1_row, current_t2_row)
-            except DatasetException as e:
-                data = e.data
-                current_t1_row = e.current_t1_row
-                current_t2_row = e.current_t2_row
-            else:
-                break
+        self.create_dataset()
         self.clean_dataset()
         self.save_dataset()
     
@@ -451,67 +560,45 @@ class CollationEngine():
         """
         # Set progress bar formatting
         pbar_format = "{desc}{percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt} [{rate_fmt}{postfix}]"
+        
+        # Initialize data container dictionary
+        data = {}
 
-        # If data was provided, initialize dataset from it
-        if data == None:
-            data = {}
-        
-        # Calculate rows for table 1, skipping ones previously clicked if necessary
-        t1_rows = self.tables[0].rows(recalculate=True, 
-                                      driver=self.driver, 
-                                      webpage_type=self.webpage_type)
-        if current_t1_row != None:
-            t1_rows = t1_rows[current_t1_row:]
-        
-        # Iterate over un-clicked table 1 rows
-        pbar1 = tqdm(t1_rows, leave=False, bar_format=pbar_format)
+        # Iterate over table 1 rows
+        pbar1 = tqdm(self.tables[0].rows, leave=False, bar_format=pbar_format)
         for i, t1_row in enumerate(pbar1):  #https://stackoverflow.com/a/45519268/15426433
             pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
 
-            # Only initialize an empty dict if no table 2 rows were
-            # previously clicked
-            if t1_row.name not in data.keys():
-                data[t1_row.name] = {}
+            data[t1_row.name] = {}
 
-            # Try clicking, and if unsuccessful then raise an exception that
-            # contains the information needed to re-start from this row
-            try:
-                t1_row.click()
-            except StaleElementReferenceException:  #TODO: put this in a method
-                msg = f'\nEncountered a stale reference at {t1_row.name=}. '
-                msg += 'Restarting from current row.\n'
-                print(msg)
-                raise DatasetException(data, i, None)
+            t1_row.click()
 
-            # Calculate rows for table 2, skipping ones previously clicked if necessary
-            t2_rows = self.tables[1].rows(recalculate=True, 
-                                          driver=self.driver, 
-                                          webpage_type=self.webpage_type)
-            if current_t2_row != None and i == current_t1_row:
-                t2_rows = t2_rows[current_t2_row:]
+            # Re-calculate rows for table 2
+            # sleep needed to make sure recalculation happens properly on Chrome and Edge
+            if self.browser in ['Chrome', 'Edge']:
+                sleep(0.1)
+            self.tables[1].recalculate_text_rows()
+            self.tables[1].recalculate_rows()
             
-            # Iterate over un-clicked table 2 rows
-            pbar2 = tqdm(t2_rows, leave=False, bar_format=pbar_format)
+            # Iterate over table 2 rows
+            pbar2 = tqdm(self.tables[1].rows, leave=False, bar_format=pbar_format)
             for j, t2_row in enumerate(pbar2):
                 pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
             
-            # Try clicking, and if unsuccessful then raise an exception that
-            # contains the information needed to re-start from this row
-                try:
-                    t2_row.click()
-                except StaleElementReferenceException:  #TODO: put this in a method
-                    msg = f'\nEncountered a stale reference at {t2_row.name=}. '
-                    msg += 'Restarting from current row.\n'
-                    print(msg)
-                    raise DatasetException(data, i, j)
+                t2_row.click()
+
+                # Re-calculate rows for table 3
+                # sleep needed to make sure recalculation happens properly on Chrome and Edge
+                if self.browser in ['Chrome', 'Edge']:
+                    sleep(0.1)
+                self.tables[2].recalculate_text_rows()
+                self.tables[2].recalculate_rows()
 
                 # Copy rows from table 3 into the data dictionary
-                t3_rows = self.tables[2].rows(recalculate=True,
-                                              driver=self.driver,
-                                              webpage_type=self.webpage_type)
-                data[t1_row.name][t2_row.name] = {
-                    r.name: r.value for r in t3_rows
-                }
+                t3_rows = self.tables[2].text_rows
+                t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
+                t3_rows = [[r[0], int(r[1].replace(',', ''))] for r in t3_rows]
+                data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
         
         # Save data as attribute and convert to dataframe
         self.data = data
@@ -545,8 +632,8 @@ class CollationEngine():
             self.df[col] = self.df[col].astype('int64')
 
         # Rename indices to reflect axis names
-        for i, a in enumerate(self.axes):
-            self.df.index.rename(name=a, level=i, inplace=True)     
+        for i, a in enumerate(self.axes[:-1]):
+            self.df.index.rename(names=a, level=i, inplace=True)     
             
     def save_dataset(self):
         self.df.to_hdf(self.filename, key='TRACDataset')
@@ -568,8 +655,8 @@ def shorten(text,
 if __name__ == '__main__':
     engine = CollationEngine(
         browser='Chrome',
-        url='https://trac.syr.edu/phptools/immigration/asylum/',
-        filename='asylumdecisionschrome.hdf',
-        axes=['Fiscal Year of Decision', 'Immigration Court State', 'Decision'],
+        url='https://trac.syr.edu/phptools/immigration/cbparrest/',
+        filename='cbparrestschrome.hdf',
+        axes=['Gender', 'Special Initiatives', 'Marital Status'],
         headless=False
     )
