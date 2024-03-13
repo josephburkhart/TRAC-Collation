@@ -83,38 +83,52 @@ class Table:
                                              webpage_type=webpage_type)
         return self._rows
     
-    def calculate_rows(self, refresh_table: bool=False, driver=None, webpage_type=None):
+    def calculate_rows(self, refresh_table: bool = False, driver=None, webpage_type=None):
         # If table has been refreshed, calculate a new web element
         # Note: if refresh_table is True, driver and webpage_type are required
         if refresh_table:
             table_elements = Table.calculate_web_elements(driver, webpage_type)
             self.web_element = table_elements[self.index]
+
         # Get elements for all rows
-        wait = WebDriverWait(self.web_element, TIMEOUT)
-        if self.table_type == 'object':
-            row_elements = wait.until(EC.presence_of_all_elements_located(
-                    (By.CLASS_NAME, 'flex-row')
-                )
-            )
-        elif self.table_type == 'link':
-            row_elements = wait.until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, ".//tr")
-                )
-            )
+        # Note: Chrome and Edge can encounter stale element references when 
+        #       the webpage is of type 'object-whole', so the calculation is 
+        #       wrapped in a while-try-except-else block
+        # Note: 
+        while True:
+            try:
+                wait = WebDriverWait(self.web_element, TIMEOUT)
+                if self.table_type == 'object':
+                    row_elements = wait.until(EC.presence_of_all_elements_located(
+                            (By.CLASS_NAME, 'flex-row')
+                        )
+                    )
+                elif self.table_type == 'link':
+                    row_elements = wait.until(
+                        EC.presence_of_all_elements_located(
+                            (By.XPATH, ".//tr")
+                        )
+                    )
 
-        # Filter out meaningless elements
-        def is_meaningful(text):
-            return (text != '' and 'All' not in text and 'Total' not in text)
-        text_rows = self.web_element.text.split('\n')
+                # Filter out meaningless elements
+                def is_meaningful(text):
+                    return (text != '' and 'All' not in text and 'Total' not in text)
+                text_rows = self.web_element.text.split('\n')
 
-        text_indices_to_skip = [i for i, r in enumerate(text_rows) if not is_meaningful(r)]
-        text_rows = [r for i, r in enumerate(text_rows) if i not in text_indices_to_skip]
-        n_elements_to_skip = len(row_elements) - len(text_rows)
-        row_elements = row_elements[n_elements_to_skip:]                  # currently, the skippable elements are always at the beginning, but this could change later
+                text_indices_to_skip = [i for i, r in enumerate(text_rows) if not is_meaningful(r)]
+                text_rows = [r for i, r in enumerate(text_rows) if i not in text_indices_to_skip]
+                # n_elements_to_skip = len(row_elements) - len(text_rows)
+                # row_elements = row_elements[n_elements_to_skip:]                  #these lines are replaced with the next line to keep Chrome and Edge from miscalculating rows
+                row_elements = [e for e in row_elements if e.text in text_rows]
 
         # Make a Row from each element
-        return [Row(e, t, self.table_type) for e, t in zip(row_elements, text_rows)]
+        # print(f"{len(row_elements)=}, {len(text_rows)=}")
+            except StaleElementReferenceException:
+                continue
+            else:
+                rows = [Row(e, t, self.table_type) for e, t in zip(row_elements, text_rows, strict=True)]
+                del row_elements, text_rows
+                return rows
     
     @staticmethod
     def calculate_all(driver, webpage_type):
