@@ -73,7 +73,7 @@ class Table:
         self.table_type = table_type
         self.index = index
 
-    def rows(self, recalculate=False, driver=None, webpage_type=None):
+    def rows(self, recalculate: bool = False, driver=None, webpage_type=None):
         # Only calculate rows when asked to
         # https://stackoverflow.com/a/69379239/15426433
         # Note: if recalculate is True, driver and webpage_type are required
@@ -187,7 +187,16 @@ class AxisMenu:
         self.clickable_element = menus[axis_index]
 
         # Calculate options
-        self.calculate_options()
+        # Note: Chrome and Edge can encounter stale element references when 
+        #       the webpage is of type 'object-whole', so the calculation is 
+        #       wrapped in a while-try-except-else block
+        while True:
+            try:
+                self.calculate_options()
+            except StaleElementReferenceException:
+                sleep(0.01)
+            else:
+                break
 
     def calculate_options(self):
         if 'object' in self.webpage_type:
@@ -221,8 +230,17 @@ class AxisMenu:
     def set_to(self, axis_name: str):
         # For object-based, have to re-calculate options because the references
         # calculated previously have turned stale
+        # Note: Chrome and Edge can encounter stale element references when 
+        #       the webpage is of type 'object-whole', so the calculation is 
+        #       wrapped in a while-try-except-else block
         if 'object' in self.webpage_type:
-            self.calculate_options()        # note: this automatically clicks
+            while True:
+                try:
+                    self.calculate_options()   # note: this automatically clicks
+                except StaleElementReferenceException:
+                    sleep(0.01)
+                else:
+                    break
         elif 'link' in self.webpage_type:
             self.click()                    # opens the menu
 
@@ -418,7 +436,7 @@ class CollationEngine():
         Raises DatasetException if a stale element reference is found.
         """
         # Set progress bar formatting
-        pbar_format = "{desc}{percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt}"
+        pbar_format = "{desc}{percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt} [{rate_fmt}{postfix}]"
 
         # If data was provided, initialize dataset from it
         if data == None:
@@ -455,7 +473,7 @@ class CollationEngine():
             t2_rows = self.tables[1].rows(recalculate=True, 
                                           driver=self.driver, 
                                           webpage_type=self.webpage_type)
-            if current_t2_row != None:
+            if current_t2_row != None and i == current_t1_row:
                 t2_rows = t2_rows[current_t2_row:]
             
             # Iterate over un-clicked table 2 rows
@@ -502,7 +520,7 @@ class CollationEngine():
         self.df = self.df.sort_index()
 
         # Sort df columns
-        self.df = self.df.reindex(sorted(self.df.columns, axis=1))
+        self.df = self.df.reindex(sorted(self.df.columns), axis=1)
 
         # Add a Total Column
         self.df['Total'] = self.df.sum(axis=1)
@@ -535,9 +553,9 @@ def shorten(text,
 
 if __name__ == '__main__':
     engine = CollationEngine(
-        browser='Edge',
+        browser='Chrome',
         url='https://trac.syr.edu/phptools/immigration/asylum/',
-        filename='asylumdecisions.hdf',
-        axes=['Fiscal Year of Decision', 'Nationality', 'Decision'],
+        filename='asylumdecisionschrome.hdf',
+        axes=['Fiscal Year of Decision', 'Immigration Court State', 'Decision'],
         headless=False
     )
