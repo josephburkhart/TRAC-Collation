@@ -1,7 +1,7 @@
 - [x] move table and row functionality into separate Table class
 - [x] add validation for user input
 - [ ] add command line interface (maybe including progress bar)
-- [ ] add support for other browsers (will probably require a config file)
+- [x] add support for other browsers (will probably require a config file)
 - [x] add try-except blocks to catch stale reference exceptions and the like
 - [ ] add support for other webpage types
 - [ ] allow user to specify an arbitrary number of axes
