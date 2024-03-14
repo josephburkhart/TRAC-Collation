@@ -422,7 +422,7 @@ class Option:
     """An Option is clickable and has a name."""
     def __init__(self, clickable_web_element):
         self.clickable_element = clickable_web_element
-        self.name = clickable_web_element.text  #StaleElementReferenceException can get thrown here
+        self.name = clickable_web_element.text  #TODO: StaleElementReferenceException can get thrown here
     
     def click(self):
         self.clickable_element.click()
