@@ -1,13 +1,9 @@
 """
-This file contains a class that can collate multi-axis data from one of 
+This module contains classes that can collate multi-axis data from one of 
 a set number of TRAC webpages.
 
-There are two kinds of TRAC webpages:
-    - link-based tables
-    - object-based tables
-
-Of these two kinds, either can have a variant in which year is broken into its
-own drop-down menu.
+This module can be run as a standalone script. To set script parameters, see
+the if '__name__' == '__main__' block at the bottom.
 """
 
 # Browser-agnostic imports
@@ -91,7 +87,7 @@ class Table:
     @property
     def text_rows(self):
         """
-        List of strings representing the useful rows from the table, without
+        List of strings representing the useful rows from this Table, without
         leading and trailing whitespace, and without headers.
         """
         if self._text_rows == []:
@@ -113,7 +109,7 @@ class Table:
     @property
     def rows(self):
         """
-        List of Row objects for the table, of the same length as text_rows.
+        List of Row objects for this Table, of the same length as text_rows.
         """
         # Calculate rows if necessary
         if self._rows == []:
@@ -141,6 +137,15 @@ class Table:
         self._rows = self.rows  # better way to use setter?
 
     def calculate_all_row_web_elements(self):
+        """
+        Calculate web elements for all Row objects in this Table, and assign 
+        each one to its respective Row.
+        
+        This method is faster than calling Row.get_web_element() on each Row
+        object because it polls the DOM for all of the elements at once.
+
+        Returns: None
+        """
         # Calculate rows if necessary
         if self._rows == []:
             self.recalculate_rows()
@@ -154,6 +159,14 @@ class Table:
             r.web_element = new_row_web_elements[r.row_index]      
 
     def calculate_all_row_clickable_web_elements(self):
+        """
+        Calculate clickable web elements for all Row objects in this Table, and
+        assign each one to its respective Row.
+
+        This method is faster than calling Row.get_web_element() on each Row
+        object because it polls the DOM for all of the clickable elements at 
+        once.
+        """
         # Calculate rows if necessary
         if self._rows == []:
             self.recalculate_rows()
@@ -178,7 +191,7 @@ class Table:
     @property
     def web_element(self):
         """
-        Web element for the table in the DOM. Recalculated if necessary.
+        Web element for this Table, automatically calculated if necessary.
         """
         if self._web_element == None:
             self._web_element = self.get_web_element(self.driver)
@@ -186,8 +199,8 @@ class Table:
     
     def get_web_element(self, driver, fail_cap: int = -1):
         """
-        Find the web element for the table. By default, the driver will keep 
-        polling the DOM indefinitely until it finds the table. Set a `fail_cap`
+        Find the web element for this Table. By default, the driver will keep 
+        polling the DOM indefinitely until it finds the table. Set `fail_cap`
         to a positive value to limit the number of times the DOM can be polled.
         """
         wait = WebDriverWait(driver, TIMEOUT)
@@ -207,7 +220,7 @@ class Table:
         self._web_element = self.web_element    # better way to use setter?
 
 class Row:
-    """A Row is clickable."""
+    """A Row is clickable and has a name."""
     def __init__(self, parent_table: Table, row_index: int, query: tuple):
         # Set initial instance attributes
         self.parent_table = parent_table
@@ -221,16 +234,24 @@ class Row:
 
     @property
     def web_element(self):
+        """Web element for this Table, automatically calculated if necessary."""
         if self._web_element == None:
             self._web_element = self.get_web_element()
         return self._web_element
     
     @web_element.setter
     def web_element(self, e):
+        """Whenenver the web element is explicitly set, recalculate the name."""
         self._web_element = e
         self.recalculate_name()
 
     def get_web_element(self, fail_cap: int = -1, recalculate_table_element: bool = False):
+        """Find the web element for this Row. By default, the driver will keep
+        polling the DOM indefinitely until it finds the row. Set `fail_cap` to
+        a positive value to limit the number of times the DOM can be polled.
+        
+        Optionally, a flag can be set to recalculate the web element for the
+        parent if the row cannot be found (defaults to False)."""
         fail_count = 0
         while fail_count < fail_cap or fail_cap < 0:
             try:
@@ -245,10 +266,14 @@ class Row:
     
     @property
     def clickable_web_element(self):
+        """
+        Web element for this Row that can be clicked to filter other Tables.
+        """
         # Recalculate clickable element if necessary
         if self._clickable_web_element == None:
             # Row queries defined in Table.rows correspond to the following:
             # object rows are already clickable
+            # TODO: to re-factor for consistency, create get_clickable_web_element()
             if self.parent_table.table_type == 'object':
                 self._clickable_web_element = self.web_element
             
@@ -276,6 +301,7 @@ class Row:
     
     @property
     def name(self):
+        """Name of this Row, corresponding to the text in the left column."""
         if self._name == None:
             self._name = self.web_element.text.rsplit(' ', 1)[0]
         return self._name
@@ -321,6 +347,9 @@ class AxisMenu:
                 break
 
     def calculate_options(self):
+        """
+        Find all of the options in this AxisMenu and store them in self.options.
+        """
         if 'object' in self.webpage_type:
             # Listbox is not contained in the clickable element, and options
             # are inside it. The clickable element must be clicked before
@@ -350,6 +379,7 @@ class AxisMenu:
         self.clickable_element.click()
 
     def set_to(self, axis_name: str):
+        """Set the axis for this AxisMenu to one of its Options."""
         # For object-based, have to re-calculate options because the references
         # calculated previously have turned stale
         # Note: Chrome and Edge can encounter stale element references when 
@@ -372,6 +402,7 @@ class AxisMenu:
         option_to_click[0].click()
 
     def calculate_all(driver, webpage_type):
+        """Calculate all AxisMenus for this webpage."""
         if webpage_type == 'object-whole':
             menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]
         elif webpage_type == 'link-whole':
@@ -384,6 +415,7 @@ class AxisMenu:
     
     @property
     def option_names(self):
+        """List of the name of each Option object for this AxisMenu."""
         return [o.name for o in self.options]
 
 class Option:
@@ -397,10 +429,27 @@ class Option:
 
 
 class CollationEngine():
-    # For first implementation, user will specify three axes which will correspond
-    # to the axes selected in the browser for the three tables (left to right).
-    # In future versions, I want the user to be able to specify an arbitrary number
-    # of axes, and have the engine construct a dataset that includes all of them.
+    """
+    A CollationEngine coordinates the other classes in collating the webpage.
+
+    Args:
+        browser: A string representing the name of the web browser to use for 
+                 accessing the webpage at `url`. Must be one of the following: 
+                 'Firefox', 'Chrome', 'Edge', or 'Safari'.
+        url: A string representing the URL of the webpage to collate data from.
+             For a list of supported webpages, see `WEBPAGE_TYPES` and
+             `FULLY_SUPPORTED_WEBPAGE_TYPES`.
+        filename: A string or Path object representing the name or path of the
+                  output data file. This input is validated to make sure that
+                  write permissions are held for this location.
+        axes: A list of strings representing the names of the axes to use when
+              collating data from the webpage.
+        headless: A boolean representing whether or not to driver the browser in
+                  headless mode. In headless mode, the browser does not have a
+                  visible window, so no graphical rendering is performed and no
+                  manual interaction with the browser instance is possible.
+                  Defaults to False.
+    """
     def __init__(self, browser: SUPPORTED_BROWSERS, url: str, 
                  filename: str | Path, axes: list[str], headless: bool=False):
         # Validate Input
@@ -540,13 +589,6 @@ class CollationEngine():
     def create_dataset(self):
         """
         Create a dataset of nested dictionaries from the webpage.
-        
-        If called with its optional parameters, this method will initialize the 
-        dataset with the provided dictionary `data`, and only get data from rows
-        including and after `current_t1_row` (for Table 1) and `current_t2_row`
-        for (Table 2).
-
-        Raises DatasetException if a stale element reference is found.
         """
         # Set progress bar formatting
         pbar_format = "{desc}{percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt} [{rate_fmt}{postfix}]"
@@ -598,6 +640,7 @@ class CollationEngine():
         )
 
     def clean_dataset(self):
+        """Clean the raw collated dataset to ensure clarity and completeness."""
         # Rectify missing second-level index entries
         unique_index1 = self.df.index.unique(0)
         unique_index2 = self.df.index.unique(1)
@@ -626,6 +669,7 @@ class CollationEngine():
             self.df.index.rename(names=a, level=i, inplace=True)     
             
     def save_dataset(self):
+        """Save the collated dataset as an HDF file."""
         self.df.to_hdf(self.filename, key='TRACDataset')
 
 def shorten(text, 
