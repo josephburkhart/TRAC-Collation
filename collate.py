@@ -25,7 +25,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
-# WEBDRIVER_PATH = None
 WEBPAGE_TYPES = {
     'https://trac.syr.edu/phptools/immigration/ntanew/': 'object-whole',
     'https://trac.syr.edu/phptools/immigration/closure/': 'object-whole',
@@ -57,12 +56,6 @@ PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 TIMEOUT = 10
 
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
-
-class DatasetException(Exception):
-    def __init__(self, data, current_t1_row, current_t2_row):
-        self.data = data
-        self.current_t1_row = current_t1_row
-        self.current_t2_row = current_t2_row
 
 class Table:
     """A Table is a collection of Rows."""
@@ -544,10 +537,7 @@ class CollationEngine():
                 options.add_argument('--headless')
             return Safari(options=options)
 
-    def create_dataset(self,
-                       data: Optional[dict | None] = None, 
-                       current_t1_row: Optional[int | None] = None, 
-                       current_t2_row: Optional[int | None] = None):
+    def create_dataset(self):
         """
         Create a dataset of nested dictionaries from the webpage.
         
