@@ -408,9 +408,9 @@ class AxisMenu:
         elif webpage_type == 'link-whole':
             menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]
         elif webpage_type == 'object-broken':
-            pass        #TODO: add this
+            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]        #TODO: add proper support for this
         elif webpage_type == 'link-broken':
-            pass        #TODO: add this
+            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]        #TODO: add proper support for this
         return menus
     
     @property
