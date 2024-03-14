@@ -54,7 +54,17 @@ TIMEOUT = 10
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
 class Table:
-    """A Table is a collection of Rows."""
+    """
+    A Table is a collection of Rows.
+    
+    Args:
+        driver: The webdriver object that is accessing the webpage.
+        table_index: An integer indicating which table on the webpage this Table 
+                     is for (0 = left, 1 = middle, 2 = right).
+        table_type: A string representing the kind of table element this Table 
+                    is for. This string is used to determine how to poll the DOM
+                    for table rows and other important elements.
+    """
     def __init__(self, driver, table_index: int, table_type: Literal['object', 'link']):
         # Set initial instance attributes
         self.driver = driver
@@ -220,7 +230,16 @@ class Table:
         self._web_element = self.web_element    # better way to use setter?
 
 class Row:
-    """A Row is clickable and has a name."""
+    """
+    A Row is clickable and has a name.
+    
+    Args:
+        parent_table: The Table object that contains this Row.
+        row_index: A string indicating which row in `parent_table` this Row
+                   corresponds to. Index order is ascending from top to bottom.
+        query: A tuple representing the query to use when polling the DOM for
+               this row's web element. Example: `(By.CLASS_NAME, 'table-fixed')`
+    """
     def __init__(self, parent_table: Table, row_index: int, query: tuple):
         # Set initial instance attributes
         self.parent_table = parent_table
@@ -311,8 +330,16 @@ class Row:
         self._name = self.name
 
 class AxisMenu:
-    """An AxisMenu is a clickable collection of Options."""
-    def __init__(self, driver, webpage_type, axis_index):
+    """
+    An AxisMenu is a clickable collection of Options.
+    
+    Args:
+        driver: The webdriver object that is accessing the webpage.
+        webpage_type: A string representing the type of the webpage.
+        axis_index: An integer indicating which menu on the webpage this 
+                    AxisMenu is for (0 = left, 1 = middle, 2 = right).
+    """
+    def __init__(self, driver, webpage_type: str, axis_index: int):
         # Set instance attributes
         self.driver = driver
         self.webpage_type = webpage_type
@@ -419,7 +446,12 @@ class AxisMenu:
         return [o.name for o in self.options]
 
 class Option:
-    """An Option is clickable and has a name."""
+    """
+    An Option is clickable and has a name.
+    
+    Args:
+        clickable_web_element: The clickable web element for this Option.
+    """
     def __init__(self, clickable_web_element):
         self.clickable_element = clickable_web_element
         self.name = clickable_web_element.text  #TODO: StaleElementReferenceException can get thrown here
