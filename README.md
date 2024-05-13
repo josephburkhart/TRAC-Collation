@@ -1,5 +1,5 @@
 # TRAC-Collation
-This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://trac.syr.edu/) (TRAC) in their [immigration toolkit](https://trac.syr.edu/immigration/tools/). This repository is still experimental, and files may change without much warning.
+This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://trac.syr.edu/) (TRAC) in their [immigration toolkit](https://trac.syr.edu/immigration/tools/).
 
 # Requirements
 - selenium 4.17.0 (earlier might work but no guarantees)
