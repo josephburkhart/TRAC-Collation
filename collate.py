@@ -764,3 +764,17 @@ if __name__ == '__main__':
         if sys.argv[1] == "--help":
             print(USAGE)
         
+        # Options-only
+        elif 1 < len(sys.argv) < 4:
+            browser = [i for i in sys.argv if "browser" in i][0].replace(
+                "--browser=", ""
+            )
+            headless = len([i for i in sys.argv if "headless" in i]) > 0
+            url = input("Please enter the URL of the TRAC webpage: ")
+            file = input("Please enter the name or path of the output file: ")
+            axes = input(
+                "Please enter the axes of interest as a comma-separated list: "
+            ).split(',')
+            
+            engine = CollationEngine(browser=browser, url=url, filename=file,
+                                     axes=axes, headless=headless)
