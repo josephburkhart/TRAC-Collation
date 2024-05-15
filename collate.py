@@ -74,7 +74,7 @@ USAGE = (
     f"\tfile\tName or full path of the output file.\n" +
     f"\taxes\tComma-separated list of the names of the axes of interest.\n" +
     f"\t\tNote that the list must be enclosed in \"\" if any names \n" +
-    f"\t\thave spaces in them." 
+    f"\t\tinclude spaces." 
 )
 
 DEMO_PARAMS = {
