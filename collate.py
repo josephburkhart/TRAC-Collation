@@ -68,7 +68,9 @@ USAGE = (
     f"Arguments:\n" +
     f"\turl\tFull address of the TRAC webpage.\n" +
     f"\tfile\tName or full path of the output file.\n" +
-    f"\taxes\tComma-separated list of the axes of interest.\n" 
+    f"\taxes\tComma-separated list of the names of the axes of interest.\n" +
+    f"\t\tNote that the list must be enclosed in \"\" if any names \n" +
+    f"\t\thave spaces in them." 
 )
 
 class Table:
