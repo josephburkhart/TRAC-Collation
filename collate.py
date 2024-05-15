@@ -791,3 +791,9 @@ if __name__ == '__main__':
             engine = CollationEngine(browser=browser, url=url, filename=file,
                                      axes=axes, headless=headless)
         
+        # All other situations are incorrect usage
+        else:
+            print(
+                f"Options or arguments not recognized. Type -h or --help for " +
+                f"usage details."
+            )
