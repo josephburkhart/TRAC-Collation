@@ -55,13 +55,14 @@ TIMEOUT = 10
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
 USAGE = (
-    f"Collate data from TRAC webpage.\n\n" +
+    f"Collate data from a TRAC webpage.\n\n" +
     f"If called without arguments, the program will prompt the user for " +
-    f"each argument.\n\n"
+    f"each \nargument. If called with neither options nor arguments, the " + 
+    f"program will \nrun with demo parameters.\n\n"
     f"Usage: python {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
     f"Options:\n" +
-    f"\t--browser=<n>\tName of the browser to use. Valid names are 'Firefox',\n" +
-    f"\t\t\t'Chrome', 'Edge', and 'Safari'.\n" +
+    f"\t--browser=<n>\tName of the browser to use. Valid names are \n" +
+    f"\t\t\t'Firefox', 'Chrome', 'Edge', and 'Safari'.\n" +
     f"\t[--headless]\tUse the browser in headless mode.\n" +
     f"\t[-h, --help]\tShow this screen.\n\n" +
     f"Arguments:\n" +
