@@ -20,6 +20,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+import sys
 
 WEBPAGE_TYPES = {
     'https://trac.syr.edu/phptools/immigration/ntanew/': 'object-whole',
@@ -52,6 +53,23 @@ PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 TIMEOUT = 10
 
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
+
+USAGE = (
+    f"Collate data from TRAC webpage.\n\n" +
+    f"If called without arguments, the program will prompt the user for " +
+    f"each argument.\n\n"
+    f"Usage: python {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
+    # f"\tpython {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
+    # f"\tpython {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
+    f"Options:\n" +
+    f"\t-h, --help\tShow this screen.\n" +
+    f"\t--browser=<n>\tName of browser to use.\n" +
+    f"\t--headless\tUse browser in headless mode.\n\n"
+    f"Arguments:\n" +
+    f"\turl\tFull address of the TRAC webpage.\n" +
+    f"\tfile\tName or full path of the output file.\n" +
+    f"\taxes\tComma-separated list of the axes of interest.\n" 
+)
 
 class Table:
     """
@@ -719,10 +737,13 @@ def shorten(text,
 
 
 if __name__ == '__main__':
-    engine = CollationEngine(
-        browser='Chrome',
-        url='https://trac.syr.edu/phptools/immigration/cbparrest/',
-        filename='cbparrestschrome.hdf',
-        axes=['Gender', 'Special Initiatives', 'Marital Status'],
-        headless=False
-    )
+    if sys.argv[1] == "--help":
+        print(USAGE)
+    else:
+        engine = CollationEngine(
+            browser='Chrome',
+            url='https://trac.syr.edu/phptools/immigration/cbparrest/',
+            filename='cbparrestschrome.hdf',
+            axes=['Gender', 'Special Initiatives', 'Marital Status'],
+            headless=False
+        )
