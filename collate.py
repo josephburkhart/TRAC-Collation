@@ -6,7 +6,7 @@ This module can be run as a standalone script. To set script parameters, see
 the if '__name__' == '__main__' block at the bottom.
 """
 
-# Browser-agnostic imports
+## Browser-agnostic imports
 # Note: Browser-specific imports are handled in CollateEngine.get_driver()
 import warnings
 warnings.filterwarnings("ignore")       # ignore warnings from pandas
@@ -25,6 +25,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import sys
 
+## Constants
 WEBPAGE_TYPES = {
     'https://trac.syr.edu/phptools/immigration/ntanew/': 'object-whole',
     'https://trac.syr.edu/phptools/immigration/closure/': 'object-whole',
@@ -741,6 +742,7 @@ def shorten(text,
     return text
 
 
+## Main Block
 if __name__ == '__main__':
     if sys.argv[1] == "--help":
         print(USAGE)
