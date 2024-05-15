@@ -778,3 +778,16 @@ if __name__ == '__main__':
             
             engine = CollationEngine(browser=browser, url=url, filename=file,
                                      axes=axes, headless=headless)
+        # Options and arguments
+        elif 4 < len(sys.argv) < 7 :
+            browser = [i for i in sys.argv if "browser" in i][0].replace(
+                "--browser=", ""
+            )
+            headless = len([i for i in sys.argv if "headless" in i]) > 0
+            url = sys.argv[-3]
+            file = sys.argv[-2]
+            axes = sys.argv[-1].split(',')
+            
+            engine = CollationEngine(browser=browser, url=url, filename=file,
+                                     axes=axes, headless=headless)
+        
