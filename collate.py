@@ -59,12 +59,11 @@ USAGE = (
     f"If called without arguments, the program will prompt the user for " +
     f"each argument.\n\n"
     f"Usage: python {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
-    # f"\tpython {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
-    # f"\tpython {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
     f"Options:\n" +
-    f"\t-h, --help\tShow this screen.\n" +
-    f"\t--browser=<n>\tName of browser to use.\n" +
-    f"\t--headless\tUse browser in headless mode.\n\n"
+    f"\t[-h, --help]\tShow this screen.\n" +
+    f"\t--browser=<n>\tName of the browser to use. Valid names are 'Firefox',\n" +
+    f"\t\t\t'Chrome', 'Edge', and 'Safari'.\n"
+    f"\t--headless\tUse the browser in headless mode.\n\n"
     f"Arguments:\n" +
     f"\turl\tFull address of the TRAC webpage.\n" +
     f"\tfile\tName or full path of the output file.\n" +
