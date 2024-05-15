@@ -8,6 +8,9 @@ the if '__name__' == '__main__' block at the bottom.
 
 # Browser-agnostic imports
 # Note: Browser-specific imports are handled in CollateEngine.get_driver()
+import warnings
+warnings.filterwarnings("ignore")       # ignore warnings from pandas
+
 from pathlib import Path
 import os
 from typing import Literal, Optional, get_args
