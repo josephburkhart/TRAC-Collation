@@ -517,6 +517,8 @@ class CollationEngine():
     """
     def __init__(self, browser: SUPPORTED_BROWSERS, url: str, 
                  filename: str | Path, axes: list[str], headless: bool=False):
+        print("Initializing collation engine... ", end="")
+
         # Validate Input
         self.validate_input(browser, url, filename, axes, headless)
         
@@ -558,6 +560,8 @@ class CollationEngine():
         for i, a in enumerate(self.axes):
             self.menus[i].set_to(a)
 
+        print("Done.")
+
         # Dataset
         self.create_dataset()
         self.clean_dataset()
@@ -565,6 +569,7 @@ class CollationEngine():
     
         # close browser
         self.driver.close()
+        print(f"Browser instance closed. Output file is saved at {filename}.")
 
     def validate_input(self, browser: SUPPORTED_BROWSERS, url: str, 
                        filename: str | Path, axes: list[str], headless: bool):
