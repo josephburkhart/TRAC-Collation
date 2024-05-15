@@ -564,7 +564,6 @@ class CollationEngine():
         self.save_dataset()
     
         # close browser
-        sleep(10)
         self.driver.close()
 
     def validate_input(self, browser: SUPPORTED_BROWSERS, url: str, 
