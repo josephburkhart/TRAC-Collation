@@ -77,6 +77,15 @@ USAGE = (
     f"\t\thave spaces in them." 
 )
 
+DEMO_PARAMS = {
+    "browser": 'Chrome',
+    "url": 'https://trac.syr.edu/phptools/immigration/cbparrest/',
+    "filename": 'cbparrestschrome.hdf',
+    "axes": ['Gender', 'Special Initiatives', 'Marital Status'],
+    "headless": True
+}
+
+## Classes
 class Table:
     """
     A Table is a collection of Rows.
@@ -744,13 +753,14 @@ def shorten(text,
 
 ## Main Block
 if __name__ == '__main__':
-    if sys.argv[1] == "--help":
-        print(USAGE)
+    # If no options or arguments are provided, run with demo parameters
+    if len(sys.argv) == 0:
+        engine = CollationEngine(**DEMO_PARAMS)
+
+    # Otherwise, run with the parameters from the command line
+    #TODO: add validation for inputs
     else:
-        engine = CollationEngine(
-            browser='Chrome',
-            url='https://trac.syr.edu/phptools/immigration/cbparrest/',
-            filename='cbparrestschrome.hdf',
-            axes=['Gender', 'Special Initiatives', 'Marital Status'],
-            headless=False
-        )
+        # Help
+        if sys.argv[1] == "--help":
+            print(USAGE)
+        
