@@ -28,8 +28,8 @@ This repository contains a tool for collating data published by the [Transaction
       - `file`: name or full path of the output file. Equivalent to `filename` in `STANDALONE_PARAMS`.
       - `axes`: Comma-separated list of the names of the axes of interest. Note that the list must be enclosed in "" if any names include spaces.
 
-Note: even when `collate.py` is used with supported TRAC tools, it is possible that it may occasionally throw `StaleElementReferenceException` or `NoSuchElementException` when the DOM changes unexpectedly or an element takes a while to load. Functionality that greatly limits such problems has been implemented - if this is a problem, you can try the following:
-  - Try re-running on a better internet connecection.
+Note: even when `collate.py` is used with supported TRAC tools, it is possible that it may occasionally throw `StaleElementReferenceException` or `NoSuchElementException` when the DOM changes unexpectedly or an element takes a while to load. The code has been structured to greatly limit such problems, but if you are still having trouble you can try the following:
+  - Try re-running on a faster internet connecection.
   - Try re-running at a time when the TRAC servers are likely to have a low load (e.g., weekends, weekday evenings).
   - Try re-arranging your names in the `axes` parameter so that the third axis is the one with the greatest number of values. This will decrease both execution time and the required number of interaction events (i.e., clicks and waits), so it will decrease the number of opportunities for an element to not load in properly.
 
