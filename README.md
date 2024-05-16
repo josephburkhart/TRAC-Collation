@@ -11,12 +11,22 @@ This repository contains a tool for collating data published by the [Transaction
 2. Download/locate the webdriver for your browser of choice - currently [Firefox](https://github.com/mozilla/geckodriver/releases), [Chrome](https://chromedriver.chromium.org/downloads), [Edge](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/?form=MA13LH) and [Safari](https://developer.apple.com/documentation/webkit/testing_with_webdriver_in_safari) are supported. Add the webdriver's path to your environment variables (in the case of Firefox, for additional instructions see [here](https://www.browserstack.com/guide/geckodriver-selenium-python)).
 3. Clone the repository, or just download `collate.py`.
 4. Navigate to the TRAC webpage that you want to collate data from (to see if your tool is supported, check [below](#which-trac-tools-can-i-use-this-with)). Note the URL and the names of the axes you want to collate.
-5. Open `collate.py`, navigate to the `if __name__ == '__main__'` block at the bottom, and set the parameters as follows:
-  - `browser`: the name of the browser you downloaded that you downloaded the webdriver for.
-  -  `url`: the address of the TRAC webpage that you want to collate data from, including the `https://` - for example, `https://trac.syr.edu/phptools/immigration/mpp4/`.
-  - `filename`: the name of the HDF file (including the `.hdf` extension) you want the collated data to be saved in. Currently, only HDF file output is supported.
-  - `axes`: the names of the three data axes you want to collate. In the final output dataest, values from the first two will be used as hierarchical indices, while values for the third will be used as columns. Support for more than three axes might be added later.
-6. Run `collate.py` from the command line or your IDE.
+5. `collate.py` can be run from an IDE or the command line:
+  - To run in an IDE, open `collate.py`, navigate to `STANDALONE_PARAMS`, and set the following values:
+    - `browser`: the name of the browser you downloaded that you downloaded the webdriver for.
+    -  `url`: the address of the TRAC webpage that you want to collate data from, including the `https://` - for example, `https://trac.syr.edu/phptools/immigration/mpp4/`.
+    - `filename`: the name of the HDF file (including the `.hdf` extension) you want the collated data to be saved in. Currently, only HDF file output is supported.
+    - `axes`: the names of the three data axes you want to collate. In the final output dataest, values from the first two will be used as hierarchical indices, while values for the third will be used as columns. Support for more than three axes might be added later.
+  - To run from the command line, ensure that your conda environment is active and that `collate.py` is in your current directory. There are three ways to run `collate.py` from the command line:
+    - `python collate.py` runs the script with the standalone parameters.
+    - `python collate.py <options>` runs the script with options. The user will then be prompted for the arguments individually. Options are:
+      - `--browser=<name>`: name of the browser to use. Valid names are `Firefox`, `Chrome`, `Edge`, and `Safari`.
+      - `--headless`: use the browser in headless mode. (This option is not required.)
+      - `-h` or `--help`: show usage details. (This option is not required.)
+    - `python collate.py <options> <arguments>` runs the script with options and arguments. Arguments are:
+      - `url`: full address of the TRAC webpage
+      - `file`: name or full path of the output file. Equivalent to `filename` in `STANDALONE_PARAMS`.
+      - `axes`: Comma-separated list of the names of the axes of interest. Note that the list must be enclosed in "" if any names include spaces.
 
 Note: even when `collate.py` is used with supported TRAC tools, it is possible that it may occasionally throw `StaleElementReferenceException` or `NoSuchElementException` when the DOM changes unexpectedly or an element takes a while to load. Functionality that greatly limits such problems has been implemented - if this is a problem, you can try the following:
   - Try re-running on a better internet connecection.
