@@ -35,21 +35,21 @@ STANDALONE_PARAMS = {
 }
 
 USAGE = (
-    f"Collate data from a TRAC webpage.\n\n" +
-    f"If called without arguments, the program will prompt the user for " +
-    f"each \nargument. If called with neither options nor arguments, the " + 
+    f"Collate data from a TRAC webpage.\n\n"
+    f"If called without arguments, the program will prompt the user for "
+    f"each \nargument. If called with neither options nor arguments, the " 
     f"program will \nrun with standalone/demo parameters.\n\n"
-    f"Usage: python {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
-    f"Options:\n" +
-    f"\t--browser=<n>\tName of the browser to use. Valid names are \n" +
-    f"\t\t\t'Firefox', 'Chrome', 'Edge', and 'Safari'.\n" +
-    f"\t[--headless]\tUse the browser in headless mode.\n" +
-    f"\t[-h, --help]\tShow this screen.\n\n" +
-    f"Arguments:\n" +
-    f"\turl\tFull address of the TRAC webpage.\n" +
-    f"\tfile\tName or full path of the output file.\n" +
-    f"\taxes\tComma-separated list of the names of the axes of interest.\n" +
-    f"\t\tNote that the list must be enclosed in \"\" if any names \n" +
+    f"Usage: python {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n"
+    f"Options:\n"
+    f"\t--browser=<n>\tName of the browser to use. Valid names are \n"
+    f"\t\t\t'Firefox', 'Chrome', 'Edge', and 'Safari'.\n"
+    f"\t[--headless]\tUse the browser in headless mode.\n"
+    f"\t[-h, --help]\tShow this screen.\n\n"
+    f"Arguments:\n"
+    f"\turl\tFull address of the TRAC webpage.\n"
+    f"\tfile\tName or full path of the output file.\n"
+    f"\taxes\tComma-separated list of the names of the axes of interest.\n"
+    f"\t\tNote that the list must be enclosed in \"\" if any names \n"
     f"\t\tinclude spaces." 
 )
 
@@ -798,6 +798,6 @@ if __name__ == '__main__':
         # All other situations are incorrect usage
         else:
             print(
-                f"Options or arguments not recognized. Type -h or --help for " +
+                f"Options or arguments not recognized. Type -h or --help for "
                 f"usage details."
             )
