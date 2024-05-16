@@ -2,8 +2,8 @@
 This module contains classes that can collate multi-axis data from one of 
 a set number of TRAC webpages.
 
-This module can be run as a standalone script. To set script parameters, see
-the if '__name__' == '__main__' block at the bottom.
+This module can be run as a  as a standalone script. To set the parameters for
+the standalone script, see STANDALONE_PARAMS below.
 """
 
 ## Browser-agnostic imports
@@ -26,6 +26,33 @@ from selenium.common.exceptions import TimeoutException
 import sys
 
 ## Constants
+STANDALONE_PARAMS = {
+    "browser": 'Chrome',
+    "url": 'https://trac.syr.edu/phptools/immigration/cbparrest/',
+    "filename": 'cbparrestschrome.hdf',
+    "axes": ['Gender', 'Special Initiatives', 'Marital Status'],
+    "headless": True
+}
+
+USAGE = (
+    f"Collate data from a TRAC webpage.\n\n" +
+    f"If called without arguments, the program will prompt the user for " +
+    f"each \nargument. If called with neither options nor arguments, the " + 
+    f"program will \nrun with standalone/demo parameters.\n\n"
+    f"Usage: python {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
+    f"Options:\n" +
+    f"\t--browser=<n>\tName of the browser to use. Valid names are \n" +
+    f"\t\t\t'Firefox', 'Chrome', 'Edge', and 'Safari'.\n" +
+    f"\t[--headless]\tUse the browser in headless mode.\n" +
+    f"\t[-h, --help]\tShow this screen.\n\n" +
+    f"Arguments:\n" +
+    f"\turl\tFull address of the TRAC webpage.\n" +
+    f"\tfile\tName or full path of the output file.\n" +
+    f"\taxes\tComma-separated list of the names of the axes of interest.\n" +
+    f"\t\tNote that the list must be enclosed in \"\" if any names \n" +
+    f"\t\tinclude spaces." 
+)
+
 WEBPAGE_TYPES = {
     'https://trac.syr.edu/phptools/immigration/ntanew/': 'object-whole',
     'https://trac.syr.edu/phptools/immigration/closure/': 'object-whole',
@@ -57,33 +84,6 @@ PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 TIMEOUT = 10
 
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
-
-USAGE = (
-    f"Collate data from a TRAC webpage.\n\n" +
-    f"If called without arguments, the program will prompt the user for " +
-    f"each \nargument. If called with neither options nor arguments, the " + 
-    f"program will \nrun with demo parameters.\n\n"
-    f"Usage: python {sys.argv[0]} (options) [(<url> <file> <axes>)]\n\n" +
-    f"Options:\n" +
-    f"\t--browser=<n>\tName of the browser to use. Valid names are \n" +
-    f"\t\t\t'Firefox', 'Chrome', 'Edge', and 'Safari'.\n" +
-    f"\t[--headless]\tUse the browser in headless mode.\n" +
-    f"\t[-h, --help]\tShow this screen.\n\n" +
-    f"Arguments:\n" +
-    f"\turl\tFull address of the TRAC webpage.\n" +
-    f"\tfile\tName or full path of the output file.\n" +
-    f"\taxes\tComma-separated list of the names of the axes of interest.\n" +
-    f"\t\tNote that the list must be enclosed in \"\" if any names \n" +
-    f"\t\tinclude spaces." 
-)
-
-DEMO_PARAMS = {
-    "browser": 'Chrome',
-    "url": 'https://trac.syr.edu/phptools/immigration/cbparrest/',
-    "filename": 'cbparrestschrome.hdf',
-    "axes": ['Gender', 'Special Initiatives', 'Marital Status'],
-    "headless": True
-}
 
 ## Classes
 class Table:
@@ -759,7 +759,7 @@ def shorten(text,
 if __name__ == '__main__':
     # If no options or arguments are provided, run with demo parameters
     if len(sys.argv) == 0:
-        engine = CollationEngine(**DEMO_PARAMS)
+        engine = CollationEngine(**STANDALONE_PARAMS)
 
     # Otherwise, run with the parameters from the command line
     #TODO: add validation for inputs
