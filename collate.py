@@ -758,7 +758,7 @@ def shorten(text,
 ## Main Block
 if __name__ == '__main__':
     # If no options or arguments are provided, run with demo parameters
-    if len(sys.argv) == 0:
+    if len(sys.argv) == 1:
         engine = CollationEngine(**STANDALONE_PARAMS)
 
     # Otherwise, run with the parameters from the command line
