@@ -1,3 +1,7 @@
+> [!WARNING]
+> As of January 2025, the Transactional Records Access Clearinghouse has left Syracuse University and its website has been taken offline, rendering this tool useless. If the website is put back up, or if a successor takes up TRAC's mantle, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) on this repository and I'll update the tool to work with the new website.
+
+
 # TRAC-Collation
 This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://trac.syr.edu/) (TRAC) in their [immigration toolkit](https://trac.syr.edu/immigration/tools/).
 
