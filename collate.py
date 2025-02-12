@@ -28,7 +28,7 @@ import sys
 ## Constants
 STANDALONE_PARAMS = {
     "browser": 'Chrome',
-    "url": 'https://trac.syr.edu/phptools/immigration/cbparrest/',
+    "url": 'https://tracreports.org/phptools/immigration/cbparrest/',
     "filename": 'cbparrestschrome.hdf',
     "axes": ['Gender', 'Special Initiatives', 'Marital Status'],
     "headless": True
@@ -44,6 +44,7 @@ USAGE = (
     f"\t--browser=<n>\tName of the browser to use. Valid names are \n"
     f"\t\t\t'Firefox', 'Chrome', 'Edge', and 'Safari'.\n"
     f"\t[--headless]\tUse the browser in headless mode.\n"
+    f"\t[--optimize]\tOptimize data traversal for fewest clicks and waits.\n"
     f"\t[-h, --help]\tShow this screen.\n\n"
     f"Arguments:\n"
     f"\turl\tFull address of the TRAC webpage.\n"
@@ -54,28 +55,28 @@ USAGE = (
 )
 
 WEBPAGE_TYPES = {
-    'https://trac.syr.edu/phptools/immigration/ntanew/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/closure/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/asyfile/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/asylum/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/mpp4/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/juvenile/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/mwc/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/cbparrest/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/cbpinadmiss/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/arrest/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/detainhistory/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/remove/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/removehistory/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/secure/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/backlog/': 'object-broken',
-    'https://trac.syr.edu/phptools/immigration/addressrep/': 'map-table',
-    'https://trac.syr.edu/immigration/reports/judgereports/': 'table-only-1',
-    'https://trac.syr.edu/phptools/immigration/asylumbl/': 'object-broken',
-    'https://trac.syr.edu/phptools/immigration/bond/': 'table-tab',
-    'https://trac.syr.edu/phptools/immigration/detention/': 'link-broken',
-    'https://trac.syr.edu/immigration/detentionstats/facilities.html': 'table-only-2',
-    'https://trac.syr.edu/immigration/detentionstats/atd_pop_table.html': 'table-only-2'
+    'https://tracreports.org/phptools/immigration/ntanew/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/closure/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/asyfile/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/asylum/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/mpp4/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/juvenile/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/mwc/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/cbparrest/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/cbpinadmiss/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/arrest/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/detainhistory/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/remove/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/removehistory/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/secure/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/backlog/': 'object-broken',
+    'https://tracreports.org/phptools/immigration/addressrep/': 'map-table',
+    'https://tracreports.org/immigration/reports/judgereports/': 'table-only-1',
+    'https://tracreports.org/phptools/immigration/asylumbl/': 'object-broken',
+    'https://tracreports.org/phptools/immigration/bond/': 'table-tab',
+    'https://tracreports.org/phptools/immigration/detention/': 'link-broken',
+    'https://tracreports.org/immigration/detentionstats/facilities.html': 'table-only-2',
+    'https://tracreports.org/immigration/detentionstats/atd_pop_table.html': 'table-only-2'
 }
 
 FULLY_SUPPORTED_TYPES = ['object-whole', 'link-whole']
@@ -84,6 +85,8 @@ PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 TIMEOUT = 10
 
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
+
+WAIT_TIME_FOR_POPULATION = 0.2
 
 ## Classes
 class Table:
@@ -402,7 +405,7 @@ class AxisMenu:
             try:
                 self.calculate_options()
             except StaleElementReferenceException:
-                sleep(0.01)
+                sleep(WAIT_TIME_FOR_POPULATION)
             else:
                 break
 
@@ -450,7 +453,7 @@ class AxisMenu:
                 try:
                     self.calculate_options()   # note: this automatically clicks
                 except StaleElementReferenceException:
-                    sleep(0.01)
+                    sleep(WAIT_TIME_FOR_POPULATION)
                 else:
                     break
         elif 'link' in self.webpage_type:
@@ -514,13 +517,27 @@ class CollationEngine():
                   visible window, so no graphical rendering is performed and no
                   manual interaction with the browser instance is possible.
                   Defaults to False.
+        optimize: A boolean that specifies whether to optimize data traversal
+                  by ordering the axes from fewest possible values to most 
+                  possible values, thereby minimizing the number of clicks and
+                  waits. Defaults to False.
+        hdf_key: An optional string that will be used as a key when saving the
+                 dataset to HDF. Users who wish to save multiple datasets to
+                 the same HDF file will need to specify a unique key each time.
+                 Defaults to 'TRACDataset'.
     """
-    def __init__(self, browser: SUPPORTED_BROWSERS, url: str, 
-                 filename: str | Path, axes: list[str], headless: bool=False):
+    def __init__(self, 
+                 browser: SUPPORTED_BROWSERS, 
+                 url: str, 
+                 filename: str | Path, 
+                 axes: list[str], 
+                 headless: bool=False,
+                 optimize: bool=False,
+                 hdf_key: str="TRACDataset"):
         print("Initializing collation engine... ", end="")
 
         # Validate Input
-        self.validate_input(browser, url, filename, axes, headless)
+        self.validate_input(browser, url, filename, axes, headless, optimize)
         
         # Set instance attributes
         self.browser = browser
@@ -528,6 +545,8 @@ class CollationEngine():
         self.filename = filename
         self.axes = axes
         self.tables = [None, None, None]
+        self.optimize = optimize
+        self.axes_order = list(range(len(axes)))
 
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
@@ -554,25 +573,42 @@ class CollationEngine():
         for m in self.menus:
             for a in self.axes:
                 if a not in m.option_names:
-                    raise ValueError(f"Axis name {a} could not be found")
+                    raise ValueError(f"Axis name '{a}' could not be found")
 
         # Set Axes
-        for i, a in enumerate(self.axes):
-            self.menus[i].set_to(a)
+        if self.optimize:
+            print("Optimizing... ", end="")
+            n_values = []
+            for a in self.axes:
+                self.menus[0].set_to(a)
+                table = Table(self.driver, 0, table_type)
+                n_values.append(len(table.text_rows))
+
+            self.axes_order = [
+                i[0] for i in sorted(enumerate(n_values), key=lambda x: x[1])
+            ]
+
+        for i, o in enumerate(self.axes_order):
+            self.menus[i].set_to(self.axes[o])
 
         print("Done.")
 
         # Dataset
         self.create_dataset()
         self.clean_dataset()
-        self.save_dataset()
+        self.save_dataset(append=Path(self.filename).exists(), key=hdf_key)
     
         # close browser
         self.driver.close()
         print(f"Browser instance closed. Output file is saved at {filename}.")
 
-    def validate_input(self, browser: SUPPORTED_BROWSERS, url: str, 
-                       filename: str | Path, axes: list[str], headless: bool):
+    def validate_input(self, 
+                       browser: SUPPORTED_BROWSERS, 
+                       url: str, 
+                       filename: str | Path, 
+                       axes: list[str], 
+                       headless: bool,
+                       optimize: bool):
         """Check that input parameters are valid."""
         # Check for valid browser
         if browser not in get_args(SUPPORTED_BROWSERS):
@@ -594,18 +630,17 @@ class CollationEngine():
         try:
             testfile = open(testfilename, 'w')
         except (OSError, IOError):
-            msg = f"Error: Cannot write a file to the folder {filename.parent}."
-            msg += "\nPlease enter a different value for `filename`."
-            print(msg)
-            quit()
+            msg = (f"Cannot write a file to the folder {filename.parent}. "
+                   f"Please enter a different value for filename.")
+            raise RuntimeError(msg)
         else:
             testfile.close()
             try:
                 os.remove(testfilename)
             except OSError:
-                msg = f"Warning: temporary file could not be deleted: {testfilename}"
-                msg += "\nPlease delete file manually after execution is complete."
-                print(msg)
+                msg = (f"Warning: temporary file could not be deleted: {testfilename} "
+                       f"Please delete file manually after execution is complete.")
+                warnings.warn(msg)
         
         # Check for valid URL
         if WEBPAGE_TYPES[url] not in FULLY_SUPPORTED_TYPES:
@@ -620,6 +655,9 @@ class CollationEngine():
         if type(headless) != bool:
             raise TypeError("headless must be of type bool")
         
+        # Check for valid optimize flag
+        if type(optimize) != bool:
+            raise TypeError("optimize must be of type bool")
 
     def get_driver(self, browser: SUPPORTED_BROWSERS, headless):
         """Import necessary classes and return webdriver for the chosen browser."""
@@ -675,9 +713,8 @@ class CollationEngine():
             t1_row.click()
 
             # Re-calculate rows for table 2
-            # sleep needed to make sure recalculation happens properly on Chrome and Edge
-            if self.browser in ['Chrome', 'Edge']:
-                sleep(0.1)
+            # sleep needed to make sure recalculation happens properly
+            sleep(WAIT_TIME_FOR_POPULATION)
             self.tables[1].recalculate_text_rows()
             self.tables[1].recalculate_rows()
             
@@ -689,9 +726,8 @@ class CollationEngine():
                 t2_row.click()
 
                 # Re-calculate rows for table 3
-                # sleep needed to make sure recalculation happens properly on Chrome and Edge
-                if self.browser in ['Chrome', 'Edge']:
-                    sleep(0.1)
+                # sleep needed to make sure recalculation happens properly
+                sleep(WAIT_TIME_FOR_POPULATION)
                 self.tables[2].recalculate_text_rows()
                 self.tables[2].recalculate_rows()
 
@@ -716,6 +752,16 @@ class CollationEngine():
         new_index = pd.MultiIndex.from_product([unique_index1, unique_index2])
         self.df = self.df.reindex(new_index, axis='index')
 
+        # Ensure index and column order match what the user specified
+        if self.optimize and self.axes_order != sorted(self.axes_order):
+            self.df = self.df.stack()
+            col_order_index = self.axes_order.index(max(self.axes_order))
+
+            self.df = self.df.unstack(col_order_index)
+
+            idx_order = [i for i in self.axes_order if i!=max(self.axes_order)]
+            self.df = self.df.reorder_levels(idx_order)
+
         # Change all NaN values to 0
         self.df = self.df.fillna(value=0.0)
 
@@ -735,11 +781,17 @@ class CollationEngine():
 
         # Rename indices to reflect axis names
         for i, a in enumerate(self.axes[:-1]):
-            self.df.index.rename(names=a, level=i, inplace=True)     
+            self.df.index.rename(names=a, level=i, inplace=True)
+        
+        # Rename columns with the final axis
+        self.df = self.df.rename_axis(columns=self.axes[-1])
             
-    def save_dataset(self):
+    def save_dataset(self, append, key):
         """Save the collated dataset as an HDF file."""
-        self.df.to_hdf(self.filename, key='TRACDataset')
+        try:
+            self.df.to_hdf(self.filename, append=append, key=key)
+        except ValueError:
+            self.df.to_hdf(self.filename, key=key)
 
 def shorten(text, 
             text_limit=24, 
@@ -760,44 +812,70 @@ if __name__ == '__main__':
     # If no options or arguments are provided, run with demo parameters
     if len(sys.argv) == 1:
         engine = CollationEngine(**STANDALONE_PARAMS)
+        sys.exit()
 
     # Otherwise, run with the parameters from the command line
     #TODO: add validation for inputs
-    else:
-        # Help
-        if sys.argv[1] == "--help":
-            print(USAGE)
-        
-        # Options-only
-        elif 1 < len(sys.argv) < 4:
-            browser = [i for i in sys.argv if "browser" in i][0].replace(
-                "--browser=", ""
-            )
-            headless = len([i for i in sys.argv if "headless" in i]) > 0
+    user_opts = [a for a in sys.argv[1:] if "--" in a or "-" in a]
+    user_args = [a for a in sys.argv[1:] if "--" not in a or "-" not in a]
+
+    # Help
+    if "--help" in user_opts or "-h" in user_opts:
+        print(USAGE)
+        sys.exit()
+
+    # Browser validation
+    try:
+        browser = [i for i in user_opts if "browser" in i][0].replace(
+            "--browser=", ""
+        )
+    except IndexError:
+        print("Error: browser is a required option.")
+        sys.exit()
+    
+    if browser not in get_args(SUPPORTED_BROWSERS):
+        print(
+            f"Error: browser must be one of the following: "
+            f"{', '.join(get_args(SUPPORTED_BROWSERS))}"
+        )
+        sys.exit()
+    
+    # Other Validation
+    if (1 <= len(user_opts) <= 3) and (len(user_args) in [0, 3]):
+        # Options
+        headless = len([i for i in user_opts if "headless" in i]) > 0
+        optimize = len([i for i in user_opts if "optimize" in i]) > 0
+    
+        # Arguments
+        if len(user_args) != 3:
             url = input("Please enter the URL of the TRAC webpage: ")
-            file = input("Please enter the name or path of the output file: ")
+            file = input(
+                "Please enter the name or path of the output file: "
+            )
             axes = input(
-                "Please enter the axes of interest as a comma-separated list: "
-            ).split(',')
-            
-            engine = CollationEngine(browser=browser, url=url, filename=file,
-                                     axes=axes, headless=headless)
-        # Options and arguments
-        elif 4 < len(sys.argv) < 7 :
-            browser = [i for i in sys.argv if "browser" in i][0].replace(
-                "--browser=", ""
-            )
-            headless = len([i for i in sys.argv if "headless" in i]) > 0
-            url = sys.argv[-3]
-            file = sys.argv[-2]
-            axes = sys.argv[-1].split(',')
-            
-            engine = CollationEngine(browser=browser, url=url, filename=file,
-                                     axes=axes, headless=headless)
-        
-        # All other situations are incorrect usage
+                f"Please enter the axes of interest as a comma-separated "
+                f"list: "
+            ).replace('"', '').split(',')
         else:
-            print(
-                f"Options or arguments not recognized. Type -h or --help for "
-                f"usage details."
-            )
+            url = user_args[-3]
+            file = user_args[-2]
+            axes = user_args[-1].split(",")
+        
+        # Validate number of axes
+        if len(axes) != 3:
+            print("Error: three axes must be provided.")
+            sys.exit()
+
+        engine = CollationEngine(browser=browser, 
+                                 url=url, 
+                                 filename=file,
+                                 axes=axes, 
+                                 headless=headless, 
+                                 optimize=optimize)
+    
+    # All other situations are incorrect usage
+    else:
+        print(
+            f"Options or arguments not recognized. Type -h or --help for "
+            f"usage details."
+        )
