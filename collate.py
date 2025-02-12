@@ -833,6 +833,7 @@ if __name__ == '__main__':
         )
         sys.exit()
     
+    # Other Validation
     if (1 <= len(user_opts) <= 3) and (len(user_args) in [0, 3]):
         # Options
         headless = len([i for i in user_opts if "headless" in i]) > 0
@@ -853,6 +854,11 @@ if __name__ == '__main__':
             file = user_args[-2]
             axes = user_args[-1].split(",")
         
+        # Validate number of axes
+        if len(axes) != 3:
+            print("Error: three axes must be provided.")
+            sys.exit()
+            
         engine = CollationEngine(browser=browser, 
                                  url=url, 
                                  filename=file,
