@@ -765,7 +765,7 @@ if __name__ == '__main__':
     #TODO: add validation for inputs
     else:
         # Help
-        if sys.argv[1] == "--help":
+        if sys.argv[1] in ["--help", "-h"]:
             print(USAGE)
         
         # Options-only
