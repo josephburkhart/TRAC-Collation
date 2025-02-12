@@ -86,6 +86,8 @@ TIMEOUT = 10
 
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
+WAIT_TIME_FOR_POPULATION = 0.2
+
 ## Classes
 class Table:
     """
@@ -403,7 +405,7 @@ class AxisMenu:
             try:
                 self.calculate_options()
             except StaleElementReferenceException:
-                sleep(0.01)
+                sleep(WAIT_TIME_FOR_POPULATION)
             else:
                 break
 
@@ -451,7 +453,7 @@ class AxisMenu:
                 try:
                     self.calculate_options()   # note: this automatically clicks
                 except StaleElementReferenceException:
-                    sleep(0.01)
+                    sleep(WAIT_TIME_FOR_POPULATION)
                 else:
                     break
         elif 'link' in self.webpage_type:
@@ -711,9 +713,8 @@ class CollationEngine():
             t1_row.click()
 
             # Re-calculate rows for table 2
-            # sleep needed to make sure recalculation happens properly on Chrome and Edge
-            if self.browser in ['Chrome', 'Edge']:
-                sleep(0.1)
+            # sleep needed to make sure recalculation happens properly
+            sleep(WAIT_TIME_FOR_POPULATION)
             self.tables[1].recalculate_text_rows()
             self.tables[1].recalculate_rows()
             
@@ -725,9 +726,8 @@ class CollationEngine():
                 t2_row.click()
 
                 # Re-calculate rows for table 3
-                # sleep needed to make sure recalculation happens properly on Chrome and Edge
-                if self.browser in ['Chrome', 'Edge']:
-                    sleep(0.1)
+                # sleep needed to make sure recalculation happens properly
+                sleep(WAIT_TIME_FOR_POPULATION)
                 self.tables[2].recalculate_text_rows()
                 self.tables[2].recalculate_rows()
 
@@ -788,7 +788,10 @@ class CollationEngine():
             
     def save_dataset(self, append, key):
         """Save the collated dataset as an HDF file."""
-        self.df.to_hdf(self.filename, append=append, key=key)
+        try:
+            self.df.to_hdf(self.filename, append=append, key=key)
+        except ValueError:
+            self.df.to_hdf(self.filename, key=key)
 
 def shorten(text, 
             text_limit=24, 
