@@ -554,7 +554,7 @@ class CollationEngine():
         for m in self.menus:
             for a in self.axes:
                 if a not in m.option_names:
-                    raise ValueError(f"Axis name {a} could not be found")
+                    raise ValueError(f"Axis name '{a}' could not be found")
 
         # Set Axes
         for i, a in enumerate(self.axes):
@@ -595,7 +595,7 @@ class CollationEngine():
             testfile = open(testfilename, 'w')
         except (OSError, IOError):
             msg = f"Error: Cannot write a file to the folder {filename.parent}."
-            msg += "\nPlease enter a different value for `filename`."
+            msg += "\nPlease enter a different value for filename."
             print(msg)
             quit()
         else:
