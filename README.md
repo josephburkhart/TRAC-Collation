@@ -30,6 +30,7 @@ This repository contains a tool for collating data published by the [Transaction
     - `python collate.py <options>` runs the script with options. The user will then be prompted for the arguments individually. Options are:
       - `--browser=<name>`: name of the browser to use. Valid names are `Firefox`, `Chrome`, `Edge`, and `Safari`.
       - `--headless`: use the browser in headless mode. (This option is not required.)
+      - `--optimize`: optimize data traversal for fewest clicks and waits. (This option is not required.)
       - `-h` or `--help`: show usage details. (This option is not required.)
     - `python collate.py <options> <arguments>` runs the script with options and arguments. Arguments are:
       - `url`: full address of the TRAC webpage
