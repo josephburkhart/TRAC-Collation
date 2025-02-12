@@ -518,7 +518,11 @@ class CollationEngine():
         optimize: A boolean that specifies whether to optimize data traversal
                   by ordering the axes from fewest possible values to most 
                   possible values, thereby minimizing the number of clicks and
-                  waits.
+                  waits. Defaults to False.
+        hdf_key: An optional string that will be used as a key when saving the
+                 dataset to HDF. Users who wish to save multiple datasets to
+                 the same HDF file will need to specify a unique key each time.
+                 Defaults to 'TRACDataset'.
     """
     def __init__(self, 
                  browser: SUPPORTED_BROWSERS, 
@@ -526,7 +530,8 @@ class CollationEngine():
                  filename: str | Path, 
                  axes: list[str], 
                  headless: bool=False,
-                 optimize: bool=False):
+                 optimize: bool=False,
+                 hdf_key: str="TRACDataset"):
         print("Initializing collation engine... ", end="")
 
         # Validate Input
@@ -589,7 +594,7 @@ class CollationEngine():
         # Dataset
         self.create_dataset()
         self.clean_dataset()
-        self.save_dataset()
+        self.save_dataset(append=Path(self.filename).exists(), key=hdf_key)
     
         # close browser
         self.driver.close()
@@ -782,9 +787,9 @@ class CollationEngine():
         # Rename columns with the final axis
         self.df = self.df.rename_axis(columns=self.axes[-1])
             
-    def save_dataset(self):
+    def save_dataset(self, append, key):
         """Save the collated dataset as an HDF file."""
-        self.df.to_hdf(self.filename, key='TRACDataset')
+        self.df.to_hdf(self.filename, append=append, key=key)
 
 def shorten(text, 
             text_limit=24, 
@@ -858,7 +863,7 @@ if __name__ == '__main__':
         if len(axes) != 3:
             print("Error: three axes must be provided.")
             sys.exit()
-            
+
         engine = CollationEngine(browser=browser, 
                                  url=url, 
                                  filename=file,
