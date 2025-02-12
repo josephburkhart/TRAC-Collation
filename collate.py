@@ -28,7 +28,7 @@ import sys
 ## Constants
 STANDALONE_PARAMS = {
     "browser": 'Chrome',
-    "url": 'https://trac.syr.edu/phptools/immigration/cbparrest/',
+    "url": 'https://tracreports.org/phptools/immigration/cbparrest/',
     "filename": 'cbparrestschrome.hdf',
     "axes": ['Gender', 'Special Initiatives', 'Marital Status'],
     "headless": True
@@ -54,28 +54,28 @@ USAGE = (
 )
 
 WEBPAGE_TYPES = {
-    'https://trac.syr.edu/phptools/immigration/ntanew/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/closure/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/asyfile/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/asylum/': 'object-whole',
-    'https://trac.syr.edu/phptools/immigration/mpp4/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/juvenile/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/mwc/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/cbparrest/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/cbpinadmiss/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/arrest/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/detainhistory/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/remove/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/removehistory/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/secure/': 'link-whole',
-    'https://trac.syr.edu/phptools/immigration/backlog/': 'object-broken',
-    'https://trac.syr.edu/phptools/immigration/addressrep/': 'map-table',
-    'https://trac.syr.edu/immigration/reports/judgereports/': 'table-only-1',
-    'https://trac.syr.edu/phptools/immigration/asylumbl/': 'object-broken',
-    'https://trac.syr.edu/phptools/immigration/bond/': 'table-tab',
-    'https://trac.syr.edu/phptools/immigration/detention/': 'link-broken',
-    'https://trac.syr.edu/immigration/detentionstats/facilities.html': 'table-only-2',
-    'https://trac.syr.edu/immigration/detentionstats/atd_pop_table.html': 'table-only-2'
+    'https://tracreports.org/phptools/immigration/ntanew/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/closure/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/asyfile/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/asylum/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/mpp4/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/juvenile/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/mwc/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/cbparrest/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/cbpinadmiss/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/arrest/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/detainhistory/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/remove/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/removehistory/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/secure/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/backlog/': 'object-broken',
+    'https://tracreports.org/phptools/immigration/addressrep/': 'map-table',
+    'https://tracreports.org/immigration/reports/judgereports/': 'table-only-1',
+    'https://tracreports.org/phptools/immigration/asylumbl/': 'object-broken',
+    'https://tracreports.org/phptools/immigration/bond/': 'table-tab',
+    'https://tracreports.org/phptools/immigration/detention/': 'link-broken',
+    'https://tracreports.org/immigration/detentionstats/facilities.html': 'table-only-2',
+    'https://tracreports.org/immigration/detentionstats/atd_pop_table.html': 'table-only-2'
 }
 
 FULLY_SUPPORTED_TYPES = ['object-whole', 'link-whole']
