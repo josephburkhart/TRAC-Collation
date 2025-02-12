@@ -628,18 +628,17 @@ class CollationEngine():
         try:
             testfile = open(testfilename, 'w')
         except (OSError, IOError):
-            msg = f"Error: Cannot write a file to the folder {filename.parent}."
-            msg += "\nPlease enter a different value for filename."
-            print(msg)
-            quit()
+            msg = (f"Cannot write a file to the folder {filename.parent}. "
+                   f"Please enter a different value for filename.")
+            raise RuntimeError(msg)
         else:
             testfile.close()
             try:
                 os.remove(testfilename)
             except OSError:
-                msg = f"Warning: temporary file could not be deleted: {testfilename}"
-                msg += "\nPlease delete file manually after execution is complete."
-                print(msg)
+                msg = (f"Warning: temporary file could not be deleted: {testfilename} "
+                       f"Please delete file manually after execution is complete.")
+                warnings.warn(msg)
         
         # Check for valid URL
         if WEBPAGE_TYPES[url] not in FULLY_SUPPORTED_TYPES:
