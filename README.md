@@ -1,9 +1,12 @@
 > [!WARNING]
 > As of January 2025, the Transactional Records Access Clearinghouse has left Syracuse University and its website has been taken offline, rendering this tool useless. If the website is put back up, or if a successor takes up TRAC's mantle, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) on this repository and I'll update the tool to work with the new website.
+>
+> ~~As of early February 2025, The Transactional Records Access Clearinghouse has restored part of their website at a new address: https://tracreports.org. I am working to update this tool to work with the new website.~~
+> As of February 12, 2025, I have updated `collate.py` to work with TRAC's new website. Some of TRAC's tools are still not online (see [below](#which-trac-tools-can-i-use-this-with)). Please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if the tool is not working properly.
 
 
 # TRAC-Collation
-This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://trac.syr.edu/) (TRAC) in their [immigration toolkit](https://trac.syr.edu/immigration/tools/).
+This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://tracreports.org/) (TRAC) in their [immigration toolkit](https://tracreports.org/immigration/tools/).
 
 # Requirements
 - selenium 4.17.0 (earlier might work but no guarantees)
@@ -18,7 +21,7 @@ This repository contains a tool for collating data published by the [Transaction
 5. `collate.py` can be run from an IDE or the command line:
   - To run in an IDE, open `collate.py`, navigate to `STANDALONE_PARAMS`, and set the following values:
     - `browser`: the name of the browser you downloaded that you downloaded the webdriver for.
-    -  `url`: the address of the TRAC webpage that you want to collate data from, including the `https://` - for example, `https://trac.syr.edu/phptools/immigration/mpp4/`.
+    -  `url`: the address of the TRAC webpage that you want to collate data from, including the `https://` - for example, `https://tracreports.org/phptools/immigration/mpp4/`.
     - `filename`: the name of the HDF file (including the `.hdf` extension) you want the collated data to be saved in. Currently, only HDF file output is supported.
     - `axes`: the names of the three data axes you want to collate. In the final output dataest, values from the first two will be used as hierarchical indices, while values for the third will be used as columns. Support for more than three axes might be added later.
   - To run from the command line, ensure that your conda environment is active and that `collate.py` is in your current directory. There are three ways to run `collate.py` from the command line:
@@ -40,32 +43,32 @@ Note: even when `collate.py` is used with supported TRAC tools, it is possible t
 # Which TRAC tools can I use this with?
 ## Supported
 Automated interaction with the following tools should be fully supported.
-- [New Proceedings Filed in Immigration Court](https://trac.syr.edu/phptools/immigration/ntanew/)
-- [Outcomes of Immigration Court Proceedings](https://trac.syr.edu/phptools/immigration/closure/)
-- [Asylum Filings](https://trac.syr.edu/phptools/immigration/asyfile/)
-- [Asylum Decisions](https://trac.syr.edu/phptools/immigration/asylum/)
-- [MPP (Remain in Mexico) Deportation Proceedings—All Cases](https://trac.syr.edu/phptools/immigration/mpp4/)
-- [Unaccompanied Juveniles — Immigration Court Deportation Proceedings](https://trac.syr.edu/phptools/immigration/juvenile/)
-- [Priority Immigration Court Cases: Women with Children](https://trac.syr.edu/phptools/immigration/mwc/)
-- [Border Patrol Arrests](https://trac.syr.edu/phptools/immigration/cbparrest/)
-- [Stopping "Inadmissibles" at U.S. Ports of Entry](https://trac.syr.edu/phptools/immigration/cbpinadmiss/)
-- [Immigration and Customs Enforcement Arrests](https://trac.syr.edu/phptools/immigration/arrest/)
-- [Latest Data: Immigration and Customs Enforcement Detainers](https://trac.syr.edu/phptools/immigration/detain/)
-- [Tracking Immigration and Customs Enforcement Detainers](https://trac.syr.edu/phptools/immigration/detainhistory/)
-- [Latest Data: Immigration and Customs Enforcement Removals](https://trac.syr.edu/phptools/immigration/remove/)
-- [Historical Data: Immigration and Customs Enforcement Removals](https://trac.syr.edu/phptools/immigration/removehistory/)
-- [Removals under the Secure Communities Program](https://trac.syr.edu/phptools/immigration/secure/)
+- [New Proceedings Filed in Immigration Court](https://tracreports.org/phptools/immigration/ntanew/)
+- [Outcomes of Immigration Court Proceedings](https://tracreports.org/phptools/immigration/closure/)
+- [Asylum Filings](https://tracreports.org/phptools/immigration/asyfile/)
+- [Asylum Decisions](https://tracreports.org/phptools/immigration/asylum/)
+- [MPP (Remain in Mexico) Deportation Proceedings—All Cases](https://tracreports.org/phptools/immigration/mpp4/)
+- [Unaccompanied Juveniles — Immigration Court Deportation Proceedings](https://tracreports.org/phptools/immigration/juvenile/)
+- [Priority Immigration Court Cases: Women with Children](https://tracreports.org/phptools/immigration/mwc/)
+- [Border Patrol Arrests](https://tracreports.org/phptools/immigration/cbparrest/)
+- [Stopping "Inadmissibles" at U.S. Ports of Entry](https://tracreports.org/phptools/immigration/cbpinadmiss/)
+- [Immigration and Customs Enforcement Arrests](https://tracreports.org/phptools/immigration/arrest/)
+- ~~[Latest Data: Immigration and Customs Enforcement Detainers](https://tracreports.org/phptools/immigration/detain/)~~ _Not on the new website as of February 12, 2025_
+- ~~[Tracking Immigration and Customs Enforcement Detainers](https://tracreports.org/phptools/immigration/detainhistory/)~~ _Not on the new website as of February 12, 2025_
+- [Latest Data: Immigration and Customs Enforcement Removals](https://tracreports.org/phptools/immigration/remove/)
+- [Historical Data: Immigration and Customs Enforcement Removals](https://tracreports.org/phptools/immigration/removehistory/)
+- [Removals under the Secure Communities Program](https://tracreports.org/phptools/immigration/secure/)
 
 ## Not yet supported
 Automated interaction with the following tools is not supported. Some of these tools simply have an additional menu and are otherwise similar to the fully supported tools above, so you might have some success using `collate.py` with them. Others have totally different interfaces, and will not work at all with `collate.py`. Full support for these tools might be added later.
-- [Immigration Court Backlog](https://trac.syr.edu/phptools/immigration/backlog/) - additional menu
-- [Pending Court Cases by Immigrant’s Address](https://trac.syr.edu/phptools/immigration/addressrep/) - different interface
-- [Judge-by-Judge Asylum Decisions in Immigration Courts](https://trac.syr.edu/immigration/reports/judgereports/) - different interface
-- [Immigration Court Asylum Backlog](https://trac.syr.edu/phptools/immigration/asylumbl/) - additional menu
-- [Immigration Court Bond Hearings and Related Case Decisions](https://trac.syr.edu/phptools/immigration/bond/) - different interface
-- [Immigration and Customs Enforcement Detention](https://trac.syr.edu/phptools/immigration/detention/) - additional menu
-- [Detention Facilities Average Daily Population](https://trac.syr.edu/immigration/detentionstats/facilities.html) - different interface
-- [Alternatives to Detention (ATD)](https://trac.syr.edu/immigration/detentionstats/atd_pop_table.html) - different interface
+- [Immigration Court Backlog](https://tracreports.org/phptools/immigration/backlog/) - additional menu
+- [Pending Court Cases by Immigrant’s Address](https://tracreports.org/phptools/immigration/addressrep/) - different interface
+- [Judge-by-Judge Asylum Decisions in Immigration Courts](https://tracreports.org/immigration/reports/judgereports/) - different interface
+- [Immigration Court Asylum Backlog](https://tracreports.org/phptools/immigration/asylumbl/) - additional menu
+- [Immigration Court Bond Hearings and Related Case Decisions](https://tracreports.org/phptools/immigration/bond/) - different interface
+- [Immigration and Customs Enforcement Detention](https://tracreports.org/phptools/immigration/detention/) - additional menu
+- [Detention Facilities Average Daily Population](https://tracreports.org/immigration/detentionstats/facilities.html) - different interface
+- [Alternatives to Detention (ATD)](https://tracreports.org/immigration/detentionstats/atd_pop_table.html) - different interface
 
 # Disclaimer
 This repository is intended to make federal immigration data more accessible to students, researchers, and journalists. It is not affiliated with, supported by, or recognized by TRAC. Always make sure to cite your sources properly. If you use this tool, I would appreciate an acknowledgement, but no citation is necessary.
