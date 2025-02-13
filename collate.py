@@ -822,6 +822,49 @@ class CollationEngine():
                 f"{self.filename}."
             )
 
+    @staticmethod
+    def get_axis_options(browser, url, headless):
+        """Return a list of possible axis options for a particular URL."""
+        # TODO: refactor validation to reduce code duplication
+        # Check for valid browser
+        if browser not in get_args(SUPPORTED_BROWSERS):
+            msg = "browser must be one of the following: "
+            msg += ', '.join(get_args(SUPPORTED_BROWSERS))
+            raise TypeError(msg)
+        
+        # Check for valid URL
+        if WEBPAGE_TYPES[url] not in FULLY_SUPPORTED_TYPES:
+            if WEBPAGE_TYPES[url] in PARTIALLY_SUPPORTED_TYPES:
+                print("Warning: URL is not fully supported. Retrieving anyway...")
+            elif url in WEBPAGE_TYPES.keys():
+                raise ValueError("URL is not supported")
+            else:
+                raise ValueError("URL is not recognized")
+        
+        # Check for valid headless flag
+        if type(headless) != bool:
+            raise TypeError("headless must be of type bool")
+        
+        # Wait time
+        if browser in ["Chrome", "Edge"]:
+            wait_time_for_population = WAIT_TIME_FOR_POPULATION_CHROMIUM
+        elif browser == "Firefox":
+            wait_time_for_population = WAIT_TIME_FOR_POPULATION_FIREFOX
+        elif browser == "Safari":
+            wait_time_for_population = WAIT_TIME_FOR_POPULATION_SAFARI
+
+        # Get axis options
+        driver = CollationEngine.get_driver(browser, headless)
+        driver.get(url)
+        webpage_type = WEBPAGE_TYPES[url]
+        menu = AxisMenu(driver, webpage_type, 0, wait_time_for_population)
+
+        options = menu.option_names
+
+        driver.close()
+
+        return options
+
 def shorten(text, 
             text_limit=24, 
             terminator='...', 
