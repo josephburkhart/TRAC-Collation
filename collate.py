@@ -858,6 +858,21 @@ class CollationEngine():
                 f"Browser instance closed. Output file is saved at "
                 f"{self.filename}."
             )
+    
+    def set_axes(self, axis_names):
+        """Set the axes to specified names."""
+        print(f"Setting axes to {axis_names}... ", end="")
+
+        for i, name in enumerate(axis_names):
+            self.menus[i].set_to(name)
+            sleep(self.wait_time)
+
+    def recalculate_tables(self):
+        if self.webpage_type in ('object-whole', 'object-broken'):
+            table_type = 'object'
+        elif self.webpage_type in ('link-whole', 'link-broken'):
+            table_type = 'link'
+        self.tables = [Table(self.driver, i, table_type, self.wait_time) for i in range(3)]
 
     @staticmethod
     def get_axis_options(browser, url, headless):
