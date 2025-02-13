@@ -529,6 +529,9 @@ class CollationEngine():
                  dataset to HDF. Users who wish to save multiple datasets to
                  the same HDF file will need to specify a unique key each time.
                  Defaults to 'TRACDataset'.
+        run_immediately: A boolean that specifies whether to immediately create 
+                         the dataset, clean it, and save it, and then close the
+                         browser. Defaults to True.
     """
     def __init__(self, 
                  browser: SUPPORTED_BROWSERS, 
@@ -537,7 +540,8 @@ class CollationEngine():
                  axes: list[str], 
                  headless: bool=False,
                  optimize: bool=False,
-                 hdf_key: str="TRACDataset"):
+                 hdf_key: str="TRACDataset",
+                 run_immediately: bool=True):
         print("Initializing collation engine... ", end="")
 
         # Validate Input
@@ -550,6 +554,7 @@ class CollationEngine():
         self.axes = axes
         self.tables = [None, None, None]
         self.optimize = optimize
+        self.hdf_key = hdf_key
         self.axes_order = list(range(len(axes)))
         
         if self.browser in ["Chrome", "Edge"]:
@@ -607,14 +612,9 @@ class CollationEngine():
 
         print("Done.")
 
-        # Dataset
-        self.create_dataset()
-        self.clean_dataset()
-        self.save_dataset(append=Path(self.filename).exists(), key=hdf_key)
-    
-        # close browser
-        self.driver.close()
-        print(f"Browser instance closed. Output file is saved at {filename}.")
+        # Run if necessary
+        if run_immediately:
+            self.run()
 
     def validate_input(self, 
                        browser: SUPPORTED_BROWSERS, 
@@ -807,6 +807,19 @@ class CollationEngine():
             self.df.to_hdf(self.filename, append=append, key=key)
         except ValueError:
             self.df.to_hdf(self.filename, key=key)
+
+    def run(self, close_immediately=True):
+        """Create, clean, save the dataset, then optionally close browser."""
+        self.create_dataset()
+        self.clean_dataset()
+        self.save_dataset(append=Path(self.filename).exists(), key=self.hdf_key)
+
+        if close_immediately:
+            self.driver.close()
+            print(
+                f"Browser instance closed. Output file is saved at "
+                f"{self.filename}."
+            )
 
 def shorten(text, 
             text_limit=24, 
