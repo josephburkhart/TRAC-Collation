@@ -549,7 +549,7 @@ class CollationEngine():
         
         # Set instance attributes
         self.browser = browser
-        self.driver = self.get_driver(browser, headless)
+        self.driver = CollationEngine.get_driver(browser, headless)
         self.filename = filename
         self.axes = axes
         self.tables = [None, None, None]
@@ -673,7 +673,8 @@ class CollationEngine():
         if type(optimize) != bool:
             raise TypeError("optimize must be of type bool")
 
-    def get_driver(self, browser: SUPPORTED_BROWSERS, headless):
+    @staticmethod
+    def get_driver(browser: SUPPORTED_BROWSERS, headless):
         """Import necessary classes and return webdriver for the chosen browser."""
         if browser == 'Firefox':
             from selenium.webdriver import Firefox                  
