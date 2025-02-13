@@ -102,12 +102,18 @@ class Table:
         table_type: A string representing the kind of table element this Table 
                     is for. This string is used to determine how to poll the DOM
                     for table rows and other important elements.
+        wait_time: A float indicating how long to wait for elements to populate.
     """
-    def __init__(self, driver, table_index: int, table_type: Literal['object', 'link']):
+    def __init__(self, 
+                 driver, 
+                 table_index: int, 
+                 table_type: Literal['object', 'link'],
+                 wait_time: float):
         # Set initial instance attributes
         self.driver = driver
         self.table_index = table_index
         self.table_type = table_type
+        self.wait_time = wait_time
        
         # Set private/container instance attributes
         self._web_element = None
@@ -354,7 +360,14 @@ class Row:
         self._clickable_web_element = self.clickable_web_element
     
     def click(self):
-        self.clickable_web_element.click()
+        while True:
+            try:
+                self.clickable_web_element.click()
+            except StaleElementReferenceException:
+                self.recalculate_clickable_web_element()
+                sleep(self.parent_table.wait_time)
+            else:
+                break
     
     @property
     def name(self):
@@ -560,11 +573,11 @@ class CollationEngine():
         self.axes_order = list(range(len(axes)))
         
         if self.browser in ["Chrome", "Edge"]:
-            self.wait_time_for_population = WAIT_TIME_FOR_POPULATION_CHROMIUM
+            self.wait_time = WAIT_TIME_FOR_POPULATION_CHROMIUM
         elif self.browser == "Firefox":
-            self.wait_time_for_population = WAIT_TIME_FOR_POPULATION_FIREFOX
+            self.wait_time = WAIT_TIME_FOR_POPULATION_FIREFOX
         elif self.browser == "Safari":
-            self.wait_time_for_population = WAIT_TIME_FOR_POPULATION_SAFARI
+            self.wait_time = WAIT_TIME_FOR_POPULATION_SAFARI
 
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
@@ -576,7 +589,7 @@ class CollationEngine():
         # TODO: this currently doesn't work for broken-out webpages
         self.menus = AxisMenu.calculate_all(self.driver, 
                                             self.webpage_type,
-                                            self.wait_time_for_population)
+                                            self.wait_time)
 
         # Calculate tables
         # TODO: this currently doesn't work for broken-out webpages
@@ -584,7 +597,7 @@ class CollationEngine():
             table_type = 'object'
         elif self.webpage_type in ('link-whole', 'link-broken'):
             table_type = 'link'
-        self.tables = [Table(self.driver, i, table_type) for i in range(3)]
+        self.tables = [Table(self.driver, i, table_type, self.wait_time) for i in range(3)]
 
         # Check for valid input axis names
         # Note: technically, all menus should have the same options, but this
@@ -601,7 +614,7 @@ class CollationEngine():
             n_values = []
             for a in self.axes:
                 self.menus[0].set_to(a)
-                sleep(self.wait_time_for_population)
+                sleep(self.wait_time)
                 table = Table(self.driver, 0, table_type)
                 n_values.append(len(table.text_rows))
 
@@ -727,27 +740,45 @@ class CollationEngine():
 
             data[t1_row.name] = {}
 
-            t1_row.click()
-
-            # Re-calculate rows for table 2
-            # sleep needed to make sure recalculation happens properly
-            sleep(self.wait_time_for_population)
-
-            self.tables[1].recalculate_text_rows()
-            self.tables[1].recalculate_rows()
+            # For all Table 1 rows beyond the first, clicking will trigger a
+            # change in Table 2. In order to make sure we wait long enough for
+            # the new rows to appear in Table 2, we need to make a copy of the
+            # original data, and then check Table 2 again and again until it
+            # is no longer the same
+            if i < 1:
+                t1_row.click()
+                sleep(self.wait_time)
+                self.tables[1].recalculate_text_rows()
+                self.tables[1].recalculate_rows()
             
+            else:
+                original_t2_row_data = self.tables[1].text_rows
+                while original_t2_row_data == self.tables[1].text_rows:
+                    t1_row.click()
+                    sleep(self.wait_time)
+                    self.tables[1].recalculate_text_rows()
+                    self.tables[1].recalculate_rows()
+
             # Iterate over table 2 rows
             pbar2 = tqdm(self.tables[1].rows, leave=False, bar_format=pbar_format)
             for j, t2_row in enumerate(pbar2):
                 pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
-            
-                t2_row.click()
 
-                # Re-calculate rows for table 3
-                # sleep needed to make sure recalculation happens properly
-                sleep(self.wait_time_for_population)
-                self.tables[2].recalculate_text_rows()
-                self.tables[2].recalculate_rows()
+                # Just as before, we need to make sure we wait long enough for
+                # the new rows to appear in Table 3
+                if j < 1:
+                    t2_row.click()
+                    sleep(self.wait_time)
+                    self.tables[2].recalculate_text_rows()
+                    self.tables[2].recalculate_rows()
+                
+                else:
+                    original_t3_row_data = self.tables[2].text_rows
+                    while original_t3_row_data == self.tables[2].text_rows:
+                        t2_row.click()
+                        sleep(self.wait_time)
+                        self.tables[2].recalculate_text_rows()
+                        self.tables[2].recalculate_rows()
 
                 # Copy rows from table 3 into the data dictionary
                 t3_rows = self.tables[2].text_rows
@@ -813,7 +844,7 @@ class CollationEngine():
 
     def close(self):
         """Close the browser instance."""
-        self.browser.close()
+        self.driver.close()
 
     def run(self, close_immediately=True):
         """Create, clean, save the dataset, then optionally close browser."""
