@@ -421,6 +421,8 @@ class AxisMenu:
             # Listbox is not contained in the clickable element, and options
             # are inside it. The clickable element must be clicked before
             # the listbox will appear.
+            # TODO: possible bug on object webpages that causes is an extra
+            #       empty option
             self.click()
             wait = WebDriverWait(self.driver, TIMEOUT)
             listbox_element = wait.until(EC.presence_of_element_located(
