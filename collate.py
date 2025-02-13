@@ -811,6 +811,10 @@ class CollationEngine():
         except ValueError:
             self.df.to_hdf(self.filename, key=key)
 
+    def close(self):
+        """Close the browser instance."""
+        self.browser.close()
+
     def run(self, close_immediately=True):
         """Create, clean, save the dataset, then optionally close browser."""
         self.create_dataset()
@@ -818,7 +822,7 @@ class CollationEngine():
         self.save_dataset(append=Path(self.filename).exists(), key=self.hdf_key)
 
         if close_immediately:
-            self.driver.close()
+            self.close()
             print(
                 f"Browser instance closed. Output file is saved at "
                 f"{self.filename}."
