@@ -86,7 +86,9 @@ TIMEOUT = 10
 
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
-WAIT_TIME_FOR_POPULATION = 0.2
+WAIT_TIME_FOR_POPULATION_CHROMIUM = 0.3
+WAIT_TIME_FOR_POPULATION_FIREFOX = 0.1
+WAIT_TIME_FOR_POPULATION_SAFARI = 0.1
 
 ## Classes
 class Table:
@@ -374,11 +376,13 @@ class AxisMenu:
         webpage_type: A string representing the type of the webpage.
         axis_index: An integer indicating which menu on the webpage this 
                     AxisMenu is for (0 = left, 1 = middle, 2 = right).
+        wait_time: A float indicating how long to wait for elements to populate.
     """
-    def __init__(self, driver, webpage_type: str, axis_index: int):
+    def __init__(self, driver, webpage_type: str, axis_index: int, wait_time):
         # Set instance attributes
         self.driver = driver
         self.webpage_type = webpage_type
+        self.wait_time = wait_time
 
         # Calculate menus
         wait = WebDriverWait(driver, TIMEOUT)
@@ -405,7 +409,7 @@ class AxisMenu:
             try:
                 self.calculate_options()
             except StaleElementReferenceException:
-                sleep(WAIT_TIME_FOR_POPULATION)
+                sleep(wait_time)
             else:
                 break
 
@@ -453,7 +457,7 @@ class AxisMenu:
                 try:
                     self.calculate_options()   # note: this automatically clicks
                 except StaleElementReferenceException:
-                    sleep(WAIT_TIME_FOR_POPULATION)
+                    sleep(self.wait_time)
                 else:
                     break
         elif 'link' in self.webpage_type:
@@ -464,16 +468,16 @@ class AxisMenu:
         option_to_click = [o for o in self.options if o.name == axis_name]
         option_to_click[0].click()
 
-    def calculate_all(driver, webpage_type):
+    def calculate_all(driver, webpage_type, wait):
         """Calculate all AxisMenus for this webpage."""
         if webpage_type == 'object-whole':
-            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]
+            menus = [AxisMenu(driver, webpage_type, i, wait) for i in range(3)]
         elif webpage_type == 'link-whole':
-            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]
+            menus = [AxisMenu(driver, webpage_type, i, wait) for i in range(3)]
         elif webpage_type == 'object-broken':
-            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]        #TODO: add proper support for this
+            menus = [AxisMenu(driver, webpage_type, i, wait) for i in range(3)]        #TODO: add proper support for this
         elif webpage_type == 'link-broken':
-            menus = [AxisMenu(driver, webpage_type, i) for i in range(3)]        #TODO: add proper support for this
+            menus = [AxisMenu(driver, webpage_type, i, wait) for i in range(3)]        #TODO: add proper support for this
         return menus
     
     @property
@@ -547,6 +551,13 @@ class CollationEngine():
         self.tables = [None, None, None]
         self.optimize = optimize
         self.axes_order = list(range(len(axes)))
+        
+        if self.browser in ["Chrome", "Edge"]:
+            self.wait_time_for_population = WAIT_TIME_FOR_POPULATION_CHROMIUM
+        elif self.browser == "Firefox":
+            self.wait_time_for_population = WAIT_TIME_FOR_POPULATION_FIREFOX
+        elif self.browser == "Safari":
+            self.wait_time_for_population = WAIT_TIME_FOR_POPULATION_SAFARI
 
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
@@ -556,7 +567,9 @@ class CollationEngine():
 
         # Calculate Menus
         # TODO: this currently doesn't work for broken-out webpages
-        self.menus = AxisMenu.calculate_all(self.driver, self.webpage_type)
+        self.menus = AxisMenu.calculate_all(self.driver, 
+                                            self.webpage_type,
+                                            self.wait_time_for_population)
 
         # Calculate tables
         # TODO: this currently doesn't work for broken-out webpages
@@ -581,6 +594,7 @@ class CollationEngine():
             n_values = []
             for a in self.axes:
                 self.menus[0].set_to(a)
+                sleep(self.wait_time_for_population)
                 table = Table(self.driver, 0, table_type)
                 n_values.append(len(table.text_rows))
 
@@ -714,7 +728,8 @@ class CollationEngine():
 
             # Re-calculate rows for table 2
             # sleep needed to make sure recalculation happens properly
-            sleep(WAIT_TIME_FOR_POPULATION)
+            sleep(self.wait_time_for_population)
+
             self.tables[1].recalculate_text_rows()
             self.tables[1].recalculate_rows()
             
@@ -727,7 +742,7 @@ class CollationEngine():
 
                 # Re-calculate rows for table 3
                 # sleep needed to make sure recalculation happens properly
-                sleep(WAIT_TIME_FOR_POPULATION)
+                sleep(self.wait_time_for_population)
                 self.tables[2].recalculate_text_rows()
                 self.tables[2].recalculate_rows()
 
