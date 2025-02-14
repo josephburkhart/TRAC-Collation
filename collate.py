@@ -795,12 +795,6 @@ class CollationEngine():
 
     def clean_dataset(self):
         """Clean the raw collated dataset to ensure clarity and completeness."""
-        # Rectify missing second-level index entries
-        unique_index1 = self.df.index.unique(0)
-        unique_index2 = self.df.index.unique(1)
-        new_index = pd.MultiIndex.from_product([unique_index1, unique_index2])
-        self.df = self.df.reindex(new_index, axis='index')
-
         # Ensure index and column order match what the user specified
         if self.optimize and self.axes_order != sorted(self.axes_order):
             self.df = self.df.stack()
@@ -810,6 +804,13 @@ class CollationEngine():
 
             idx_order = [i for i in self.axes_order if i!=max(self.axes_order)]
             self.df = self.df.reorder_levels(idx_order)
+
+        
+        # Rectify missing second-level index entries
+        unique_index1 = self.df.index.unique(0)
+        unique_index2 = self.df.index.unique(1)
+        new_index = pd.MultiIndex.from_product([unique_index1, unique_index2])
+        self.df = self.df.reindex(new_index, axis='index')
 
         # Change all NaN values to 0
         self.df = self.df.fillna(value=0.0)
