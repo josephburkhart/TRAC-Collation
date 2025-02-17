@@ -1,0 +1,8 @@
+chromedriver.exe
+geckodriver.exe
+msedgedriver.exe
+sandbox*
+control/*
+__pycache__
+.pytest_cache
+everything.py
