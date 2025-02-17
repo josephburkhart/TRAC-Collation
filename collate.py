@@ -491,7 +491,12 @@ class AxisMenu:
         # Select the given option
         # TODO: is there a better way to do this than list comprehension?
         option_to_click = [o for o in self.options if o.name == axis_name]
-        option_to_click[0].click()
+        try:
+            option_to_click[0].click()
+        except StaleElementReferenceException:
+            self.calculate_options()
+            option_to_click = [o for o in self.options if o.name == axis_name]
+            option_to_click[0].click()
 
     def calculate_all(driver, webpage_type, wait):
         """Calculate all AxisMenus for this webpage."""
