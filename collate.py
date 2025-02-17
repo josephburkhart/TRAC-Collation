@@ -56,14 +56,14 @@ USAGE = (
 
 WEBPAGE_TYPES = {
     'https://tracreports.org/phptools/immigration/ntanew/': 'object-whole',
-    'https://tracreports.org/phptools/immigration/closure/': 'object-whole',
+    'https://tracreports.org/phptools/immigration/closure/': 'object-broken',
     'https://tracreports.org/phptools/immigration/asyfile/': 'object-whole',
     'https://tracreports.org/phptools/immigration/asylum/': 'object-whole',
     'https://tracreports.org/phptools/immigration/mpp4/': 'link-whole',
     'https://tracreports.org/phptools/immigration/juvenile/': 'link-whole',
     'https://tracreports.org/phptools/immigration/mwc/': 'link-whole',
     'https://tracreports.org/phptools/immigration/cbparrest/': 'link-whole',
-    'https://tracreports.org/phptools/immigration/cbpinadmiss/': 'link-whole',
+    'https://tracreports.org/phptools/immigration/cbpinadmiss/': 'object-whole',
     'https://tracreports.org/phptools/immigration/arrest/': 'link-whole',
     'https://tracreports.org/phptools/immigration/detainhistory/': 'link-whole',
     'https://tracreports.org/phptools/immigration/remove/': 'link-whole',
