@@ -304,9 +304,9 @@ class Row:
     
     @web_element.setter
     def web_element(self, e):
-        """Whenenver the web element is explicitly set, recalculate the name."""
+        """Whenenver the web element is explicitly set, recalculate the name and value."""
         self._web_element = e
-        self.recalculate_name()
+        self.recalculate_name_and_value()
 
     def get_web_element(self, fail_cap: int = -1, recalculate_table_element: bool = False):
         """Find the web element for this Row. By default, the driver will keep
@@ -376,9 +376,19 @@ class Row:
             self._name = self.web_element.text.rsplit(' ', 1)[0]
         return self._name
     
-    def recalculate_name(self):
+    @property
+    def value(self):
+        """Value of this Row, corresponding to the text in the right column."""
+        if self._value == None:
+            self._value = self.web_element.text.rsplit(' ', 1)[1]
+        return self._value
+    
+    def recalculate_name_and_value(self):
         self._name = None
         self._name = self.name
+
+        self._value = None
+        self._value = self.value
 
 class AxisMenu:
     """
