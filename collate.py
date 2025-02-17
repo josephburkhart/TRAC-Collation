@@ -294,6 +294,7 @@ class Row:
         self._web_element = None
         self._clickable_web_element = None
         self._name = None
+        self._value = None
 
     @property
     def web_element(self):
