@@ -630,7 +630,7 @@ class CollationEngine():
             for a in self.axes:
                 self.menus[0].set_to(a)
                 sleep(self.wait_time)
-                table = Table(self.driver, 0, table_type)
+                table = Table(self.driver, 0, table_type, self.wait_time)
                 n_values.append(len(table.text_rows))
 
             self.axes_order = [
