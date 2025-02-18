@@ -1,9 +1,13 @@
 > [!WARNING]
-> ~~As of January 2025, the Transactional Records Access Clearinghouse has left Syracuse University and its website has been taken offline, rendering this tool useless. If the website is put back up, or if a successor takes up TRAC's mantle, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) on this repository and I'll update the tool to work with the new website.~~
+> **Updates**
+> 
+> ~~**2025-01-22:** As of January 2025, the Transactional Records Access Clearinghouse has left Syracuse University and its website has been taken offline, rendering this tool useless. If the website is put back up, or if a successor takes up TRAC's mantle, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) on this repository and I'll update the tool to work with the new website.~~
 >
-> ~~As of early February 2025, The Transactional Records Access Clearinghouse has restored part of their website at a new address: https://tracreports.org. I am working to update this tool to work with the new website.~~
+> ~~**2025-02-12:** As of early February 2025, The Transactional Records Access Clearinghouse has restored part of their website at a new address: https://tracreports.org. I am working to update this tool to work with the new website.~~
 >
-> As of February 12, 2025, I have updated `collate.py` to work with TRAC's new website. Some of TRAC's tools are still not online (see [below](#which-trac-tools-can-i-use-this-with)). Please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if the tool is not working properly.
+> ~~**2025-02-12:** As of February 12, 2025, I have updated `collate.py` to work with TRAC's new website. Some of TRAC's tools are still not online (see [below](#which-trac-tools-can-i-use-this-with)). Please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if the tool is not working properly.~~
+>
+> **2025-02-18:** I have found a bug that can silently cause errors in the saved datasets when using Chrome and Edge - Firefox seems unaffected. I am working on a solution. In the meantime, please use Firefox or wait for me to implement a solution.
 
 
 # TRAC-Collation
