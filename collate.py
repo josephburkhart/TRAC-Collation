@@ -114,11 +114,13 @@ class Table:
         self.table_index = table_index
         self.table_type = table_type
         self.wait_time = wait_time
-       
+
         # Set private/container instance attributes
         self._web_element = None
         self._text_rows = []
         self._rows = []
+        self._name_header_element = None
+        self._rows_value_total = 0
         
         # Set instance table query attribute based on the table type
         if table_type == 'object':
@@ -137,6 +139,23 @@ class Table:
             self.row_clickable_query = None #because row_query is already clickable
         elif self.table_type == 'link':
             self.row_clickable_query = (By.XPATH, ".//td[@class='Data l']/a")
+
+        # Set instance header of the name column based on the table type
+        if self.table_type == 'object':
+            self.name_header_query = (By.XPATH, ".//thead/tr/th[contains(@class, 'w-2/3')]") #/thead/tr/th[@class='w-2/3']
+        elif self.table_type == 'link':
+            raise NotImplementedError   #TODO
+
+    @property
+    def name_header_element(self):
+        if self._name_header_element is None:
+            wait = WebDriverWait(self.web_element, TIMEOUT)
+            self._name_header_element = wait.until(EC.presence_of_element_located(self.name_header_query))
+        return self._name_header_element
+
+    def recalculate_name_header_element(self):
+        self._name_header_element = None    # TODO: is this consistent with other methods in this class?
+        return self.name_header_element
 
     @property
     def text_rows(self):
@@ -273,6 +292,16 @@ class Table:
         self._web_element = None
         self._web_element = self.web_element    # better way to use setter?
 
+    @property
+    def rows_value_total(self):
+        if self._rows_value_total == 0:
+            self._rows_value_total = sum([r.value for r in self.rows])
+        return self._rows_value_total
+    
+    def recalculate_rows_value_total(self):
+        self._rows_value_total -= self._rows_value_total
+        self._rows_value_total = self._rows_value_total
+
 class Row:
     """
     A Row is clickable and has a name.
@@ -381,7 +410,7 @@ class Row:
     def value(self):
         """Value of this Row, corresponding to the text in the right column."""
         if self._value == None:
-            self._value = self.web_element.text.rsplit(' ', 1)[1]
+            self._value = int(self.web_element.text.rsplit(' ', 1)[1].replace(",", ""))
         return self._value
     
     def recalculate_name_and_value(self):
@@ -750,57 +779,102 @@ class CollationEngine():
         data = {}
 
         # Iterate over table 1 rows
-        pbar1 = tqdm(self.tables[0].rows, leave=False, bar_format=pbar_format)
-        for i, t1_row in enumerate(pbar1):  #https://stackoverflow.com/a/45519268/15426433
-            pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
-
-            data[t1_row.name] = {}
-
+        pbar1 = tqdm(range(len(self.tables[0].rows)), leave=False, bar_format=pbar_format)
+        for i in pbar1:  #https://stackoverflow.com/a/45519268/15426433
             # For all Table 1 rows beyond the first, clicking will trigger a
             # change in Table 2. In order to make sure we wait long enough for
             # the new rows to appear in Table 2, we need to make a copy of the
             # original data, and then check Table 2 again and again until it
-            # is no longer the same
+            # is no longer the same.
+            #
+            #  Note: sometimes, it seems the driver accidentally clicks on a
+            #        previous row, so we also need to make sure that the new
+            #        rows don't match any of the previously new rows. I don't
+            #        know why this happens.
+            previous_table2_contents = []
             if i < 1:
+                t1_row = self.tables[0].rows[i]
                 t1_row.click()
                 sleep(self.wait_time)
-                self.tables[1].recalculate_text_rows()
                 self.tables[1].recalculate_rows()
+                self.tables[1].recalculate_text_rows()
             
             else:
+                t1_row = self.tables[0].rows[i]
                 original_t2_row_data = self.tables[1].text_rows
-                while original_t2_row_data == self.tables[1].text_rows:
+                previous_table2_contents.append(original_t2_row_data)
+                while (original_t2_row_data == self.tables[1].text_rows or
+                       self.tables[1].text_rows in previous_table2_contents):
+                    t1_row.recalculate_clickable_web_element()
                     t1_row.click()
                     sleep(self.wait_time)
-                    self.tables[1].recalculate_text_rows()
+                    self.recalculate_tables()
                     self.tables[1].recalculate_rows()
+                    self.tables[1].recalculate_text_rows()
+
+            pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
+
+            data[t1_row.name] = {}
+
+            intended_t2_names = [row.name for row in self.tables[1].rows]
+            intended_t2_values = [row.value for row in self.tables[1].rows]
+
+            # self.tables[1].name_header_element.click()
+            # self.tables[1].name_header_element.click()
+            # self.recalculate_tables()
+            # self.tables[1].recalculate_rows()
+            # self.tables[1].recalculate_text_rows()
 
             # Iterate over table 2 rows
-            pbar2 = tqdm(self.tables[1].rows, leave=False, bar_format=pbar_format)
-            for j, t2_row in enumerate(pbar2):
-                pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
-
+            # NOTE: other way: just iterate over range of len of rows, and then recalculate them between each one
+            pbar2 = tqdm(range(len(self.tables[1].rows)), leave=False, bar_format=pbar_format)
+            for j in pbar2:
                 # Just as before, we need to make sure we wait long enough for
                 # the new rows to appear in Table 3
+
+                # self.recalculate_tables()
+                t2_row = self.tables[1].rows[j]
+                previous_table3_contents = []
+                
                 if j < 1:
-                    t2_row.click()
+                    t2_row = self.tables[1].rows[j]
+                    t2_row.click()      # todo: could add a post-click buffer time constant
+
                     sleep(self.wait_time)
-                    self.tables[2].recalculate_text_rows()
                     self.tables[2].recalculate_rows()
+                    self.tables[2].recalculate_text_rows()
                 
                 else:
                     original_t3_row_data = self.tables[2].text_rows
-                    while original_t3_row_data == self.tables[2].text_rows:
-                        t2_row.click()
+                    previous_table3_contents.append(original_t3_row_data)
+
+                    t2_row = self.tables[1].rows[j]
+                    t2_row.click()
+                    
+                    while (
+                        ((original_t3_row_data == self.tables[2].text_rows) and len(self.tables[2].text_rows) > 1) or     # Clicking Table 2 row must result in a change in Table 3 text rows
+                        self.tables[2].text_rows in previous_table3_contents or # Clicking Table 2 row must result in Table 3 text rows that do not match any of those which came before
+                        (t2_row.value != intended_t2_values[j] and t2_row.name != intended_t2_names[j])
+                    ):
                         sleep(self.wait_time)
-                        self.tables[2].recalculate_text_rows()
+                        
+                        self.recalculate_tables()
                         self.tables[2].recalculate_rows()
+                        self.tables[2].recalculate_text_rows()
+
+                        t2_row = self.tables[1].rows[j]
+                        t2_row.click()
+                
+                pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
 
                 # Copy rows from table 3 into the data dictionary
                 t3_rows = self.tables[2].text_rows
                 t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
                 t3_rows = [[r[0], int(r[1].replace(',', ''))] for r in t3_rows]
                 data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
+
+                del j, t2_row
+            del i, t1_row
         
         # Save data as attribute and convert to dataframe
         self.data = data
