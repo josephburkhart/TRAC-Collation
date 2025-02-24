@@ -666,6 +666,7 @@ class CollationEngine():
             self.axes_order = [
                 i[0] for i in sorted(enumerate(n_values), key=lambda x: x[1])
             ]
+            print(f"Reordering axes to {self.axes_order} for better performance... ", end="")
 
         for i, o in enumerate(self.axes_order):
             self.menus[i].set_to(self.axes[o])
