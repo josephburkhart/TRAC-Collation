@@ -174,13 +174,6 @@ class Table:
             # (NOTE: this could change)
             elif self.table_type == 'link':
                 self._rows = [Row(self, i+2, self.row_query) for i in range(len(self.text_rows))]
-
-            # I don't understand why, but sometimes the lengths of text_rows
-            # and rows are different. This makes sure they are the same.
-            #       TODO: come up with a better fix
-            if len(self._rows) > len(self.text_rows):
-                for i in range(len(self._rows) - len(self.text_rows)):
-                    _ = self._rows.pop(-1)
             
         return self._rows
     
