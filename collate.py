@@ -86,9 +86,7 @@ TIMEOUT = 10
 
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
-WAIT_TIME_FOR_POPULATION_CHROMIUM = 0.2
-WAIT_TIME_FOR_POPULATION_FIREFOX = 0.3
-WAIT_TIME_FOR_POPULATION_SAFARI = 0.1
+WAIT_TIME_FOR_POPULATION = 0.2
 
 STALE_REFERENCE_MAX_ATTEMPTS = 1000
 
@@ -651,12 +649,7 @@ class CollationEngine():
             self.driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [f"{url}graph.php"]})
             self.driver.execute_cdp_cmd("Network.enable", {})
 
-        if self.browser in ["Chrome", "Edge"]:
-            self.wait_time = WAIT_TIME_FOR_POPULATION_CHROMIUM
-        elif self.browser == "Firefox":
-            self.wait_time = WAIT_TIME_FOR_POPULATION_FIREFOX
-        elif self.browser == "Safari":
-            self.wait_time = WAIT_TIME_FOR_POPULATION_SAFARI
+        self.wait_time = WAIT_TIME_FOR_POPULATION
 
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
