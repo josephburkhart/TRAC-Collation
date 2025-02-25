@@ -221,8 +221,14 @@ class Table:
         new_row_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_query))
 
         # Re-assign row elements
-        for r in self._rows:
-            r.web_element = new_row_web_elements[r.row_index]      
+        # TODO: figure out why IndexError is sometimes thrown
+        try:
+            for r in self._rows:
+                r.web_element = new_row_web_elements[r.row_index]
+        except IndexError:
+            self.recalculate_rows()
+            for r in self._rows:
+                r.web_element = new_row_web_elements[r.row_index]
 
     def calculate_all_row_clickable_web_elements(self, also_rows=False):
         """
@@ -251,8 +257,15 @@ class Table:
             new_row_clickable_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_clickable_query))
 
             # Re-assign clickable row elements
-            for r in self._rows:        #TODO: self._rows or self.rows???
-                r.clickable_web_element = new_row_clickable_web_elements[r.row_index]   #TODO: check indexing
+            # Table.calculate_all_row_web_elements() can encounter an IndexError
+            # so I should prepare for encountering one here as well
+            try:
+                for r in self._rows:
+                    r.clickable_web_element = new_row_clickable_web_elements[r.row_index]   #TODO: check indexing
+            except IndexError:
+                self.recalculate_rows()
+                for r in self._rows:
+                    r.clickable_web_element = new_row_clickable_web_elements[r.row_index]
 
     @property
     def web_element(self):
@@ -338,8 +351,11 @@ class Row:
                 if recalculate_table_element:
                     self.parent_table.recalculate_web_element()
             else:
-                return elements[self.row_index]
-    
+                try:    # TODO: this is ugly
+                    return elements[self.row_index]
+                except IndexError:
+                    raise IndexError(f"{self.row_index=}, {len(elements)=}, {elements=}")
+
     @property
     def clickable_web_element(self):
         """
