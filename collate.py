@@ -850,35 +850,36 @@ class CollationEngine():
                 while t2_total_expected != t2_total_actual:
                     t2_total_actual = 0
 
-                    # pbar2 = tqdm(self.tables[1].rows, leave=False, bar_format=pbar_format)
-                    # for j, t2_row in enumerate(self.tables[1].rows):
-                    for j in range(len(self.tables[1].text_rows)):
-                        self.tables[1].recalculate_rows()
+                    pbar2 = tqdm(
+                        range(len(self.tables[1].text_rows)), 
+                        leave=False, 
+                        bar_format=pbar_format
+                    )
+                    for j in pbar2:
+                        # self.tables[1].recalculate_rows()
                         t2_row = self.tables[1].rows[j]
-                        # pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
-                        
-                        print(f"Table 2 row: {t2_row.name}\texpected t3 total: {t2_row.value}")
+                        pbar2.set_description(shorten(f"Table 2: {t2_row.name}")) 
+
+                        # print(f"Table 2 row: {t2_row.name}\texpected t3 total: {t2_row.value}")
 
                         t2_row.click()
+
                         sleep(self.wait_time)
                         self.tables[2].recalculate_rows()
 
-
-                        while t2_row.value != self.tables[2].rows_value_total:
-                            # Re-calculate rows for table 3
-                            # sleep needed to make sure recalculation happens properly
+                        while t2_row.value != sum([r.value for r in self.tables[2].rows]):
                             sleep(self.wait_time)
                             self.tables[2].recalculate_rows()
-
-                        # Keep t2 tally for sanity check
-                        print(f"Table 2 row: {t2_row.name}\tactual   t3 total: {self.tables[2].rows_value_total}")
-                        t2_total_actual += self.tables[2].rows_value_total
 
                         # Copy rows from table 3 into the data dictionary
                         t3_rows = self.tables[2].text_rows
                         t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
                         t3_rows = [[r[0], int(r[1].replace(',', ''))] for r in t3_rows]
                         data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
+
+                        # Keep t2 tally for sanity check
+                        t2_total_actual += sum(data[t1_row.name][t2_row.name].values())
+                        print(f"Table 2 row: {t2_row.name}\tactual   t3 total: {sum(data[t1_row.name][t2_row.name].values())}")
                 
                 print(f"Table 1 row: {t1_row.name}\tactual   t2 total: {t2_total_actual}")
                 t1_total_actual += t2_total_actual
