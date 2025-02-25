@@ -343,7 +343,7 @@ class Row:
     def web_element(self):
         """Web element for this Table, automatically calculated if necessary."""
         if self._web_element == None:
-            self._web_element = self.get_web_element()
+            self._web_element = self.recalculate_web_element()
         return self._web_element
     
     @web_element.setter
