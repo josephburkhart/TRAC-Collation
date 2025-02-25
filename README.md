@@ -3,8 +3,9 @@
 >
 > ~~As of early February 2025, The Transactional Records Access Clearinghouse has restored part of their website at a new address: https://tracreports.org. I am working to update this tool to work with the new website.~~
 >
-> As of February 12, 2025, I have updated `collate.py` to work with TRAC's new website. Some of TRAC's tools are still not online (see [below](#which-trac-tools-can-i-use-this-with)). Please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if the tool is not working properly.
-
+> ~~As of February 12, 2025, I have updated `collate.py` to work with TRAC's new website. Some of TRAC's tools are still not online (see [below](#which-trac-tools-can-i-use-this-with)). Please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if the tool is not working properly.~~
+>
+> As of February <__>, 2025, I have resolved the remaining bugs caused by TRAC's new website. In the process, I have had to drop support for Firefox and Safari. If you used this tool between February 1 and February <__>, your dataset may contain minor errors, and you should pull down or copy the latest version of `collate.py` to refresh your dataset. As always, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if you think this tool is not working properly.
 
 # TRAC-Collation
 This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://tracreports.org/) (TRAC) in their [immigration toolkit](https://tracreports.org/immigration/tools/).
@@ -16,7 +17,7 @@ This repository contains a tool for collating data published by the [Transaction
 
 # Usage
 1. Set up an environment with pandas and selenium (for conda instructions, see [here](https://conda.io/projects/conda/en/latest/user-guide/getting-started.html)).
-2. Download/locate the webdriver for your browser of choice - currently [Firefox](https://github.com/mozilla/geckodriver/releases), [Chrome](https://chromedriver.chromium.org/downloads), [Edge](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/?form=MA13LH) and [Safari](https://developer.apple.com/documentation/webkit/testing_with_webdriver_in_safari) are supported. Add the webdriver's path to your environment variables (in the case of Firefox, for additional instructions see [here](https://www.browserstack.com/guide/geckodriver-selenium-python)).
+2. Download/locate the webdriver for your browser of choice - currently [Chrome](https://chromedriver.chromium.org/downloads) abd [Edge](https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/?form=MA13LH) are supported. Add the webdriver's path to your environment variables, or put the executable file in the same folder as `collate.py`.
 3. Clone the repository, or just download `collate.py`.
 4. Navigate to the TRAC webpage that you want to collate data from (to see if your tool is supported, check [below](#which-trac-tools-can-i-use-this-with)). Note the URL and the names of the axes you want to collate.
 5. `collate.py` can be run from an IDE or the command line:
@@ -25,6 +26,8 @@ This repository contains a tool for collating data published by the [Transaction
     -  `url`: the address of the TRAC webpage that you want to collate data from, including the `https://` - for example, `https://tracreports.org/phptools/immigration/mpp4/`.
     - `filename`: the name of the HDF file (including the `.hdf` extension) you want the collated data to be saved in. Currently, only HDF file output is supported.
     - `axes`: the names of the three data axes you want to collate. In the final output dataest, values from the first two will be used as hierarchical indices, while values for the third will be used as columns. Support for more than three axes might be added later.
+    - `headless`: whether or not to run your browser in headless mode, which hides the window.
+    - `optimize`: whether or not to optimize the data traversal path to minimize the number of clicks and waits.
   - To run from the command line, ensure that your conda environment is active and that `collate.py` is in your current directory. There are three ways to run `collate.py` from the command line:
     - `python collate.py` runs the script with the standalone parameters.
     - `python collate.py <options>` runs the script with options. The user will then be prompted for the arguments individually. Options are:
@@ -40,7 +43,7 @@ This repository contains a tool for collating data published by the [Transaction
 Note: even when `collate.py` is used with supported TRAC tools, it is possible that it may occasionally throw `StaleElementReferenceException` or `NoSuchElementException` when the DOM changes unexpectedly or an element takes a while to load. The code has been structured to greatly limit such problems, but if you are still having trouble you can try the following:
   - Try re-running on a faster internet connecection.
   - Try re-running at a time when the TRAC servers are likely to have a low load (e.g., weekends, weekday evenings).
-  - Try re-arranging your names in the `axes` parameter so that the third axis is the one with the greatest number of values. This will decrease both execution time and the required number of interaction events (i.e., clicks and waits), so it will decrease the number of opportunities for an element to not load in properly.
+  - Pass the `optimize` flag to minimize the number of clicks and waits.
 
 # Which TRAC tools can I use this with?
 ## Supported
