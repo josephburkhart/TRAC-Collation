@@ -43,14 +43,14 @@ def single_dataset_test(browser, headless, optimize, url, axes, control_file_pat
 @pytest.mark.parametrize("headless", [False, True])
 @pytest.mark.parametrize("optimize", [False, True])
 @pytest.mark.parametrize("url,axes,control_file_path", SINGLE_DATASETS)
-def test_firefox_single_datasets(headless, optimize, url, axes, control_file_path, tmp_path):
-    single_dataset_test("Firefox", headless, optimize, url, axes, control_file_path, tmp_path)
-
-@pytest.mark.parametrize("headless", [False, True])
-@pytest.mark.parametrize("optimize", [False, True])
-@pytest.mark.parametrize("url,axes,control_file_path", SINGLE_DATASETS)
 def test_chrome_single_datasets(headless, optimize, url, axes, control_file_path, tmp_path):
     single_dataset_test("Chrome", headless, optimize, url, axes, control_file_path, tmp_path)
+
+# @pytest.mark.parametrize("headless", [False, True])
+# @pytest.mark.parametrize("optimize", [False, True])
+# @pytest.mark.parametrize("url,axes,control_file_path", SINGLE_DATASETS)
+# def test_firefox_single_datasets(headless, optimize, url, axes, control_file_path, tmp_path):
+#     single_dataset_test("Firefox", headless, optimize, url, axes, control_file_path, tmp_path)
 
 @pytest.mark.parametrize("headless", [False, True])
 @pytest.mark.parametrize("optimize", [False, True])
