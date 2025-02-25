@@ -814,20 +814,26 @@ class CollationEngine():
         data = {}
 
         # Iterate over table 1 rows
-        t1_total_expected = self.tables[0].rows_value_total
+        self.tables[0].recalculate_rows()
+        sleep(self.wait_time)
+
+        t1_total_expected = sum([r.value for r in self.tables[0].rows])
         t1_total_actual = 0
 
         while t1_total_expected != t1_total_actual:
             t1_total_actual = 0
 
-            # pbar1 = tqdm(self.tables[0].rows, leave=False, bar_format=pbar_format)
-            # for i, t1_row in enumerate(self.tables[0].rows):  #https://stackoverflow.com/a/45519268/15426433
-            for i in range(len(self.tables[0].text_rows)):
-                self.tables[0].recalculate_rows()
+            pbar1 = tqdm(
+                range(len(self.tables[0].text_rows)), 
+                leave=False, 
+                bar_format=pbar_format
+            )
+            for i in pbar1:
+                # self.tables[0].recalculate_rows()
                 t1_row = self.tables[0].rows[i]
-                # pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
+                pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
 
-                print(f"Table 1 row: {t1_row.name}\texpected t2 total: {t1_row.value}")
+                # print(f"Table 1 row: {t1_row.name}\texpected t2 total: {t1_row.value}")
 
                 data[t1_row.name] = {}
 
@@ -835,9 +841,7 @@ class CollationEngine():
                 sleep(self.wait_time)
                 self.tables[1].recalculate_rows()
                 
-                while t1_row.value != self.tables[1].rows_value_total:
-                    # Re-calculate rows for table 2
-                    # sleep needed to make sure recalculation happens properly
+                while t1_row.value != sum([r.value for r in self.tables[1].rows]):
                     sleep(self.wait_time)
                     self.tables[1].recalculate_rows()
                     
