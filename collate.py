@@ -210,8 +210,13 @@ class Table:
             self.recalculate_rows()
       
         # Calculate all row elements
-        wait = WebDriverWait(self.web_element, TIMEOUT)
-        new_row_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_query))
+        try:
+            wait = WebDriverWait(self.web_element, TIMEOUT)
+            new_row_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_query))
+        except StaleElementReferenceException:
+            self.recalculate_web_element()
+            wait = WebDriverWait(self.web_element, TIMEOUT)
+            new_row_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_query))
 
         # Re-assign row elements
         # TODO: figure out why IndexError is sometimes thrown
