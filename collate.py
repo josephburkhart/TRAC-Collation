@@ -663,7 +663,14 @@ class CollationEngine():
         self.optimize = optimize
         self.hdf_key = hdf_key
         self.axes_order = list(range(len(axes)))
-        
+
+        # If using Chrome, prevent the graph from loading, since it tremendously
+        # slows down the webpage. 
+        # TODO: I want to do this for Firefox but I can't figure out how.
+        if self.browser == "Chrome":
+            self.driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [f"{url}graph.php"]})
+            self.driver.execute_cdp_cmd("Network.enable", {})
+
         if self.browser in ["Chrome", "Edge"]:
             self.wait_time = WAIT_TIME_FOR_POPULATION_CHROMIUM
         elif self.browser == "Firefox":
