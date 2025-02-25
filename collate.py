@@ -287,21 +287,20 @@ class Table:
             self._web_element = self.get_web_element(self.driver)
         return self._web_element
     
-    def get_web_element(self, driver, fail_cap: int = -1):
+    def get_web_element(self, driver, attempt_cap: int = -1):
         """
         Find the web element for this Table. By default, the driver will keep 
-        polling the DOM indefinitely until it finds the table. Set `fail_cap`
+        polling the DOM indefinitely until it finds the table. Set `attempt_cap`
         to a positive value to limit the number of times the DOM can be polled.
         """
         wait = WebDriverWait(driver, TIMEOUT)
-        fail_count = 0
-        while fail_count < fail_cap or fail_cap < 0:
+        attempt_count = 0
+        while attempt_count < attempt_cap or attempt_cap < 0:
             try:
                 table_elements = wait.until(EC.presence_of_all_elements_located(self.table_query))
-            except TimeoutException:
-                print(f'Warning: table not found. Trying again... ({fail_count = })')
-                fail_count += 1
-                continue
+            except TimeoutException as e:
+                print(f'Warning: {type(e)} encountered - table not found. Trying again... ({attempt_count = })')
+                attempt_count += 1
             else:
                 return table_elements[self.table_index]
     
@@ -355,20 +354,21 @@ class Row:
         self._web_element = e
         self.recalculate_name_and_value()
 
-    def get_web_element(self, fail_cap: int = -1, recalculate_table_element: bool = False):
+    def recalculate_web_element(self, attempt_cap: int = -1, recalculate_table_element: bool = False):
         """Find the web element for this Row. By default, the driver will keep
         polling the DOM indefinitely until it finds the row. Set `fail_cap` to
         a positive value to limit the number of times the DOM can be polled.
         
         Optionally, a flag can be set to recalculate the web element for the
         parent if the row cannot be found (defaults to False)."""
-        fail_count = 0
-        while fail_count < fail_cap or fail_cap < 0:
+        attempt_count = 0
+        while attempt_count < attempt_cap or attempt_cap < 0:
             try:
                 wait = WebDriverWait(self.parent_table.web_element, TIMEOUT)
                 elements = wait.until(EC.presence_of_all_elements_located(self.query))
             except (TimeoutException, NoSuchElementException) as e:
-                print(f'Warning: {type(e)} was encountered - row could not be found. Trying again... ({fail_count = })')
+                print(f'Warning: {type(e)} was encountered - row could not be found. Trying again... ({attempt_count = })')
+                attempt_count += 1
                 if recalculate_table_element:
                     self.parent_table.recalculate_web_element()
             else:
