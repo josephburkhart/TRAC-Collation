@@ -84,7 +84,8 @@ PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 
 TIMEOUT = 10
 
-SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
+SUPPORTED_BROWSERS = Literal['Chrome', 'Edge']
+# SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
 WAIT_TIME_FOR_POPULATION = 0.2
 
