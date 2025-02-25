@@ -311,7 +311,11 @@ class Table:
     @property
     def rows_value_total(self):
         if self._rows_value_total == 0:
-            self._rows_value_total = sum([r.value for r in self.rows])
+            try:
+                self._rows_value_total = sum([r.value for r in self.rows])
+            except IndexError:  # TODO: This IndexError should not happen, and I'm not sure why it does
+                self.recalculate_rows()
+                self._rows_value_total = sum([r.value for r in self.rows])
         return self._rows_value_total
     
     def recalculate_rows_value_total(self):
