@@ -407,27 +407,57 @@ class Row:
         self._clickable_web_element = self.clickable_web_element
     
     def click(self):
-        while True:
+        attempt_count = 0
+        while attempt_count < STALE_REFERENCE_MAX_ATTEMPTS:
             try:
                 self.clickable_web_element.click()
-            except StaleElementReferenceException:
-                self.recalculate_clickable_web_element()
-                sleep(self.parent_table.wait_time)
-            else:
                 break
+            except StaleElementReferenceException as e:
+                print(f"Warning: {e} encountered - row could not be found. Trying again... ({attempt_count = })")
+                attempt_count += 1
+
+                self.parent_table.calculate_all_row_web_elements()
+                self.parent_table.calculate_all_row_clickable_web_elements()
+                # self.recalculate_web_element()
+                # self.recalculate_clickable_web_element()
+                sleep(self.parent_table.wait_time)
+
     
     @property
     def name(self):
         """Name of this Row, corresponding to the text in the left column."""
         if self._name == None:
-            self._name = self.web_element.text.rsplit(' ', 1)[0]
+            attempt_count = 0
+            while attempt_count < STALE_REFERENCE_MAX_ATTEMPTS:
+                try:
+                    self._name = self.web_element.text.rsplit(' ', 1)[0]
+                    break
+                except StaleElementReferenceException as e:
+                    print(f"Warning: {e} encountered - row could not be found. Trying again... ({attempt_count = })")
+                    attempt_count += 1
+
+                    self.parent_table.calculate_all_row_web_elements()  # previously self.recalculate_web_element()
+                    sleep(self.parent_table.wait_time)
+        
         return self._name
     
     @property
     def value(self):
         """Value of this Row, corresponding to the text in the right column."""
         if self._value == None:
-            self._value = int(self.web_element.text.rsplit(' ', 1)[1].replace(",", ""))
+            attempt_count = 0
+            while attempt_count < STALE_REFERENCE_MAX_ATTEMPTS:
+                try:
+                    self._value = int(self.web_element.text.rsplit(' ', 1)[1].replace(",", ""))
+                except StaleElementReferenceException as e:
+                    print(f"Warning: {e} encountered - row could not be found. Trying again... ({attempt_count = })")
+                    attempt_count += 1
+
+                    self.parent_table.calculate_all_row_web_elements()  # previously self.recalculate_web_element()
+                    sleep(self.parent_table.wait_time)
+                else:
+                    break
+
         return self._value
     
     def recalculate_name_and_value(self):
