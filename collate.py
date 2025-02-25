@@ -121,9 +121,7 @@ class Table:
         self._web_element = None
         self._text_rows = []
         self._rows = []
-        self._name_header_element = None
-        self._rows_value_total = 0
-        
+
         # Set instance table query attribute based on the table type
         if table_type == 'object':
             self.table_query = (By.CLASS_NAME, 'table-fixed')
@@ -141,23 +139,6 @@ class Table:
             self.row_clickable_query = None #because row_query is already clickable
         elif self.table_type == 'link':
             self.row_clickable_query = (By.XPATH, ".//td[@class='Data l']/a")
-
-        # Set instance header of the name column based on the table type
-        if self.table_type == 'object':
-            self.name_header_query = (By.XPATH, ".//thead/tr/th[contains(@class, 'w-2/3')]") #/thead/tr/th[@class='w-2/3']
-        elif self.table_type == 'link':
-            raise NotImplementedError   #TODO
-
-    @property
-    def name_header_element(self):
-        if self._name_header_element is None:
-            wait = WebDriverWait(self.web_element, TIMEOUT)
-            self._name_header_element = wait.until(EC.presence_of_element_located(self.name_header_query))
-        return self._name_header_element
-
-    def recalculate_name_header_element(self):
-        self._name_header_element = None    # TODO: is this consistent with other methods in this class?
-        return self.name_header_element
 
     @property
     def text_rows(self):
@@ -213,9 +194,6 @@ class Table:
 
         self._rows = []
         self._rows = self.rows  # better way to use setter?
-
-        self._rows_value_total -= self._rows_value_total
-        self._rows_value_total = self.rows_value_total
 
         if also_web_elements:
             self.calculate_all_row_web_elements()
@@ -305,16 +283,6 @@ class Table:
     def recalculate_web_element(self):
         self._web_element = None
         self._web_element = self.web_element    # better way to use setter?
-
-    @property
-    def rows_value_total(self):
-        if self._rows_value_total == 0:
-            try:
-                self._rows_value_total = sum([r.value for r in self.rows])
-            except IndexError:  # TODO: This IndexError should not happen, and I'm not sure why it does
-                self.recalculate_rows()
-                self._rows_value_total = sum([r.value for r in self.rows])
-        return self._rows_value_total
 
 class Row:
     """
