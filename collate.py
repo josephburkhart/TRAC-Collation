@@ -318,7 +318,7 @@ class Table:
 
 class Row:
     """
-    A Row is clickable and has a name.
+    A Row is clickable and has a name and a value.
     
     Args:
         parent_table: The Table object that contains this Row.
