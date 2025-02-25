@@ -647,7 +647,7 @@ class CollationEngine():
         # If using Chrome, prevent the graph from loading, since it tremendously
         # slows down the webpage. 
         # TODO: I want to do this for Firefox but I can't figure out how.
-        if self.browser == "Chrome":
+        if self.browser in ["Chrome", "Edge"]:
             self.driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [f"{url}graph.php"]})
             self.driver.execute_cdp_cmd("Network.enable", {})
 
