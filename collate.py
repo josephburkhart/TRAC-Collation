@@ -175,10 +175,6 @@ class Table:
             self._text_rows = [r for r in self._text_rows if is_meaningful(r)]
         return self._text_rows
     
-    def recalculate_text_rows(self):
-        self._text_rows = []
-        self._text_rows = self.text_rows
-    
     @property
     def rows(self):
         """
@@ -317,10 +313,6 @@ class Table:
                 self.recalculate_rows()
                 self._rows_value_total = sum([r.value for r in self.rows])
         return self._rows_value_total
-    
-    def recalculate_rows_value_total(self):
-        self._rows_value_total -= self._rows_value_total
-        self._rows_value_total = self._rows_value_total
 
 class Row:
     """
