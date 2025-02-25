@@ -24,6 +24,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import sys
+import decorator
 
 ## Constants
 STANDALONE_PARAMS = {
@@ -1024,6 +1025,35 @@ def shorten(text,
     text += delimiter + (padding * (pad_limit - len(text)))
     return text
 
+def retry(max_attempts, timeout, print_warnings, subnotification, 
+          except_callback, *exception_types):
+    """Decorator for retrying a specific function call some number of times.
+    
+    Ref: https://stackoverflow.com/a/567697/15426433
+
+    Args:
+        max_attempts: an integer specifying how many times the function call
+            can be attempted before it is allowed to fail
+        timeout: a float specifying how many seconds to wait in between attempts
+        print_warnings: a boolean specifying whether or not to print 
+            notifications of failed attempts to the console
+        subnotification: a string describing part of the notification to print
+        except_callback: a function or method that will be called in the event
+            of an exception
+        exception_types: all types of exceptions to catch
+    """
+    @decorator.decorator
+    def try_it(func, *fargs, **fkwargs):
+        for attempt_count in range(max_attempts):
+            try:
+                return func(*fargs, **fkwargs)
+            except exception_types as e:
+                if print_warnings:
+                    print(f"Warning: {e} encountered - {subnotification}. Trying "
+                          f"again... attempt count = {attempt_count + 1} ")
+                except_callback()
+                sleep(timeout)
+    return try_it
 
 ## Main Block
 if __name__ == '__main__':
