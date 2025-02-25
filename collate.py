@@ -205,11 +205,28 @@ class Table:
             
         return self._rows
     
-    def recalculate_rows(self):
+    def recalculate_rows(self, also_web_elements=False, also_clickable_web_elements=False):
+        """Erase and re-generate all internal data about rows.
+        
+        By default, does not recalculate web elements or clickable web elements.
+        """
+        self._text_rows = []
+        self._text_rows = self.text_rows
+
         self._rows = []
         self._rows = self.rows  # better way to use setter?
 
-    def calculate_all_row_web_elements(self):
+        self._rows_value_total -= self._rows_value_total
+        self._rows_value_total = self.rows_value_total
+
+        if also_web_elements:
+            self.calculate_all_row_web_elements()
+        
+        if also_clickable_web_elements:
+            self.calculate_all_row_clickable_web_elements()
+
+
+    def calculate_all_row_web_elements(self, also_rows=False):
         """
         Calculate web elements for all Row objects in this Table, and assign 
         each one to its respective Row.
@@ -220,7 +237,7 @@ class Table:
         Returns: None
         """
         # Calculate rows if necessary
-        if self._rows == []:
+        if self._rows == [] or also_rows:
             self.recalculate_rows()
       
         # Calculate all row elements
@@ -231,7 +248,7 @@ class Table:
         for r in self._rows:
             r.web_element = new_row_web_elements[r.row_index]      
 
-    def calculate_all_row_clickable_web_elements(self):
+    def calculate_all_row_clickable_web_elements(self, also_rows=False):
         """
         Calculate clickable web elements for all Row objects in this Table, and
         assign each one to its respective Row.
@@ -241,7 +258,7 @@ class Table:
         once.
         """
         # Calculate rows if necessary
-        if self._rows == []:
+        if self._rows == [] or also_rows:
             self.recalculate_rows()
       
         # Rows for which web_element is already clickable
