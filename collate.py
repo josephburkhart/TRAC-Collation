@@ -31,7 +31,8 @@ STANDALONE_PARAMS = {
     "url": 'https://tracreports.org/phptools/immigration/cbparrest/',
     "filename": 'cbparrestschrome.hdf',
     "axes": ['Gender', 'Special Initiatives', 'Marital Status'],
-    "headless": True
+    "headless": True,
+    "optimize": False
 }
 
 USAGE = (
