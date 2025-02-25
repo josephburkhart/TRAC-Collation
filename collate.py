@@ -832,102 +832,72 @@ class CollationEngine():
         data = {}
 
         # Iterate over table 1 rows
-        pbar1 = tqdm(range(len(self.tables[0].rows)), leave=False, bar_format=pbar_format)
-        for i in pbar1:  #https://stackoverflow.com/a/45519268/15426433
-            # For all Table 1 rows beyond the first, clicking will trigger a
-            # change in Table 2. In order to make sure we wait long enough for
-            # the new rows to appear in Table 2, we need to make a copy of the
-            # original data, and then check Table 2 again and again until it
-            # is no longer the same.
-            #
-            #  Note: sometimes, it seems the driver accidentally clicks on a
-            #        previous row, so we also need to make sure that the new
-            #        rows don't match any of the previously new rows. I don't
-            #        know why this happens.
-            previous_table2_contents = []
-            if i < 1:
+        t1_total_expected = self.tables[0].rows_value_total
+        t1_total_actual = 0
+
+        while t1_total_expected != t1_total_actual:
+            t1_total_actual = 0
+
+            # pbar1 = tqdm(self.tables[0].rows, leave=False, bar_format=pbar_format)
+            # for i, t1_row in enumerate(self.tables[0].rows):  #https://stackoverflow.com/a/45519268/15426433
+            for i in range(len(self.tables[0].text_rows)):
+                self.tables[0].recalculate_rows()
                 t1_row = self.tables[0].rows[i]
+                # pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
+
+                print(f"Table 1 row: {t1_row.name}\texpected t2 total: {t1_row.value}")
+
+                data[t1_row.name] = {}
+
                 t1_row.click()
                 sleep(self.wait_time)
                 self.tables[1].recalculate_rows()
-                self.tables[1].recalculate_text_rows()
-            
-            else:
-                t1_row = self.tables[0].rows[i]
-                original_t2_row_data = self.tables[1].text_rows
-                previous_table2_contents.append(original_t2_row_data)
-                while (original_t2_row_data == self.tables[1].text_rows or
-                       self.tables[1].text_rows in previous_table2_contents):
-                    t1_row.recalculate_clickable_web_element()
-                    t1_row.click()
+                
+                while t1_row.value != self.tables[1].rows_value_total:
+                    # Re-calculate rows for table 2
+                    # sleep needed to make sure recalculation happens properly
                     sleep(self.wait_time)
-                    self.recalculate_tables()
                     self.tables[1].recalculate_rows()
-                    self.tables[1].recalculate_text_rows()
-
-            pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
-
-            data[t1_row.name] = {}
-
-            intended_t2_names = [row.name for row in self.tables[1].rows]
-            intended_t2_values = [row.value for row in self.tables[1].rows]
-
-            # self.tables[1].name_header_element.click()
-            # self.tables[1].name_header_element.click()
-            # self.recalculate_tables()
-            # self.tables[1].recalculate_rows()
-            # self.tables[1].recalculate_text_rows()
-
-            # Iterate over table 2 rows
-            # NOTE: other way: just iterate over range of len of rows, and then recalculate them between each one
-            pbar2 = tqdm(range(len(self.tables[1].rows)), leave=False, bar_format=pbar_format)
-            for j in pbar2:
-                # Just as before, we need to make sure we wait long enough for
-                # the new rows to appear in Table 3
-
-                # self.recalculate_tables()
-                t2_row = self.tables[1].rows[j]
-                previous_table3_contents = []
-                
-                if j < 1:
-                    t2_row = self.tables[1].rows[j]
-                    t2_row.click()      # todo: could add a post-click buffer time constant
-
-                    sleep(self.wait_time)
-                    self.tables[2].recalculate_rows()
-                    self.tables[2].recalculate_text_rows()
-                
-                else:
-                    original_t3_row_data = self.tables[2].text_rows
-                    previous_table3_contents.append(original_t3_row_data)
-
-                    t2_row = self.tables[1].rows[j]
-                    t2_row.click()
                     
-                    while (
-                        ((original_t3_row_data == self.tables[2].text_rows) and len(self.tables[2].text_rows) > 1) or     # Clicking Table 2 row must result in a change in Table 3 text rows
-                        self.tables[2].text_rows in previous_table3_contents or # Clicking Table 2 row must result in Table 3 text rows that do not match any of those which came before
-                        (t2_row.value != intended_t2_values[j] and t2_row.name != intended_t2_names[j])
-                    ):
-                        sleep(self.wait_time)
-                        
-                        self.recalculate_tables()
-                        self.tables[2].recalculate_rows()
-                        self.tables[2].recalculate_text_rows()
+                # Iterate over table 2 rows
+                t2_total_expected = t1_row.value
+                t2_total_actual = 0
 
+                while t2_total_expected != t2_total_actual:
+                    t2_total_actual = 0
+
+                    # pbar2 = tqdm(self.tables[1].rows, leave=False, bar_format=pbar_format)
+                    # for j, t2_row in enumerate(self.tables[1].rows):
+                    for j in range(len(self.tables[1].text_rows)):
+                        self.tables[1].recalculate_rows()
                         t2_row = self.tables[1].rows[j]
+                        # pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
+                        
+                        print(f"Table 2 row: {t2_row.name}\texpected t3 total: {t2_row.value}")
+
                         t2_row.click()
+                        sleep(self.wait_time)
+                        self.tables[2].recalculate_rows()
+
+
+                        while t2_row.value != self.tables[2].rows_value_total:
+                            # Re-calculate rows for table 3
+                            # sleep needed to make sure recalculation happens properly
+                            sleep(self.wait_time)
+                            self.tables[2].recalculate_rows()
+
+                        # Keep t2 tally for sanity check
+                        print(f"Table 2 row: {t2_row.name}\tactual   t3 total: {self.tables[2].rows_value_total}")
+                        t2_total_actual += self.tables[2].rows_value_total
+
+                        # Copy rows from table 3 into the data dictionary
+                        t3_rows = self.tables[2].text_rows
+                        t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
+                        t3_rows = [[r[0], int(r[1].replace(',', ''))] for r in t3_rows]
+                        data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
                 
-                pbar2.set_description(shorten(f"Table 2: {t2_row.name}"))  
-
-                # Copy rows from table 3 into the data dictionary
-                t3_rows = self.tables[2].text_rows
-                t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
-                t3_rows = [[r[0], int(r[1].replace(',', ''))] for r in t3_rows]
-                data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
-
-                del j, t2_row
-            del i, t1_row
+                print(f"Table 1 row: {t1_row.name}\tactual   t2 total: {t2_total_actual}")
+                t1_total_actual += t2_total_actual
         
         # Save data as attribute and convert to dataframe
         self.data = data
