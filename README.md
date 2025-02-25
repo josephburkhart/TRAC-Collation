@@ -5,7 +5,7 @@
 >
 > ~~As of February 12, 2025, I have updated `collate.py` to work with TRAC's new website. Some of TRAC's tools are still not online (see [below](#which-trac-tools-can-i-use-this-with)). Please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if the tool is not working properly.~~
 >
-> As of February <__>, 2025, I have resolved the remaining bugs caused by TRAC's new website. In the process, I have had to drop support for Firefox and Safari. If you used this tool between February 1 and February <__>, your dataset may contain minor errors, and you should pull down or copy the latest version of `collate.py` to refresh your dataset. As always, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if you think this tool is not working properly.
+> As of February <25>, 2025, I have resolved the remaining bugs caused by TRAC's new website. In the process, I have had to drop support for Firefox and Safari. If you used this tool between February 1 and February <__>, your dataset may contain minor errors, and you should pull down or copy the latest version of `collate.py` to refresh your dataset. As always, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if you think this tool is not working properly.
 
 # TRAC-Collation
 This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://tracreports.org/) (TRAC) in their [immigration toolkit](https://tracreports.org/immigration/tools/).
