@@ -826,8 +826,6 @@ class CollationEngine():
                 t1_row = self.tables[0].rows[i]
                 pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
 
-                # print(f"Table 1 row: {t1_row.name}\texpected t2 total: {t1_row.value}")
-
                 data[t1_row.name] = {}
 
                 t1_row.click()
@@ -854,8 +852,6 @@ class CollationEngine():
                         # self.tables[1].recalculate_rows()
                         t2_row = self.tables[1].rows[j]
                         pbar2.set_description(shorten(f"Table 2: {t2_row.name}")) 
-
-                        # print(f"Table 2 row: {t2_row.name}\texpected t3 total: {t2_row.value}")
 
                         t2_row.click()
 
