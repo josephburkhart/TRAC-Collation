@@ -5,26 +5,26 @@ from typing import get_args
 import pandas as pd
 
 SINGLE_DATASETS = [
-    # (
-    #     "https://tracreports.org/phptools/immigration/asyfile/", 
-    #     ["Fiscal Year Application Filed", "How Long in U.S.", "Gender"], 
-    #     Path("control/2025-02_AsylumFilings_FiscalYearApplicationFiled-HowLongInUS-Gender.hdf")
-    # ),
+    (
+        "https://tracreports.org/phptools/immigration/mwc/", 
+        ["Outcome", "Fiscal Year Case Began", "Represented"], 
+        Path("control/2025-02-25_WomenWithChildren_Outcome-FiscalYearCaseBegan-Represented.hdf")
+    ),
+    (
+        "https://tracreports.org/phptools/immigration/cbparrest/", 
+        ["Child/Family Group", "Arrest Method", "Gender"], 
+        Path("control/2025-02-25_BordrePatrolArrests_ChildFamilyGroup-ArrestMethod-Gender.hdf")
+    ),
+    (
+        "https://tracreports.org/phptools/immigration/asyfile/", 
+        ["Custody", "How Long in U.S.", "Gender"], 
+        Path("control/2025-02-25_AsylumFilings_Custody-HowLongInUS-Gender.hdf")
+    ),
     (
         "https://tracreports.org/phptools/immigration/asylum/", 
         ["Decision", "Age", "Absentia"], 
-        Path("control/2025-02_AsylumDecisions_Decision-Age-Absentia.hdf")
+        Path("control/2025-02-25_AsylumDecisions_Decision-Age-Absentia.hdf")
     ),
-    # (
-    #     "https://tracreports.org/phptools/immigration/mwc/", 
-    #     ["Fiscal Year Case Began", "Outcome", "Represented"], 
-    #     Path("control/2025-02_WomenWithChildren_FiscalYearCaseBegan-Outcome-Represented.hdf")
-    # ),
-    # (
-    #     "https://tracreports.org/phptools/immigration/cbparrest/", 
-    #     ["Arrest Method", "Time in U.S.", "Gender"], 
-    #     Path("control/2025-02_BordrePatrolArrests_ArrestMethod-TimeInUS-Gender.hdf")
-    # ),
 ]
 
 def single_dataset_test(browser, headless, optimize, url, axes, control_file_path, tmp_path):
