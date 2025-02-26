@@ -988,20 +988,12 @@ class CollationEngine():
         # Check for valid headless flag
         if type(headless) != bool:
             raise TypeError("headless must be of type bool")
-        
-        # Wait time
-        if browser in ["Chrome", "Edge"]:
-            wait_time_for_population = WAIT_TIME_FOR_POPULATION_CHROMIUM
-        elif browser == "Firefox":
-            wait_time_for_population = WAIT_TIME_FOR_POPULATION_FIREFOX
-        elif browser == "Safari":
-            wait_time_for_population = WAIT_TIME_FOR_POPULATION_SAFARI
-
+            
         # Get axis options
         driver = CollationEngine.get_driver(browser, headless)
         driver.get(url)
         webpage_type = WEBPAGE_TYPES[url]
-        menu = AxisMenu(driver, webpage_type, 0, wait_time_for_population)
+        menu = AxisMenu(driver, webpage_type, 0, WAIT_TIME_FOR_POPULATION)
 
         options = menu.option_names
 
