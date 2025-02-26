@@ -642,6 +642,7 @@ class CollationEngine():
         self.tables = [None, None, None]
         self.optimize = optimize
         self.hdf_key = hdf_key
+        self.table_type = None
         self.axes_order = list(range(len(axes)))
 
         # If using Chrome, prevent the graph from loading, since it tremendously
@@ -668,10 +669,10 @@ class CollationEngine():
         # Calculate tables
         # TODO: this currently doesn't work for broken-out webpages
         if self.webpage_type in ('object-whole', 'object-broken'):
-            table_type = 'object'
+            self.table_type = 'object'
         elif self.webpage_type in ('link-whole', 'link-broken'):
-            table_type = 'link'
-        self.tables = [Table(self.driver, i, table_type, self.wait_time) for i in range(3)]
+            self.table_type = 'link'
+        self.tables = [Table(self.driver, i, self.table_type, self.wait_time) for i in range(3)]
 
         # Check for valid input axis names
         # Note: technically, all menus should have the same options, but this
@@ -685,16 +686,7 @@ class CollationEngine():
         # Set Axes
         if self.optimize:
             print("Optimizing... ", end="")
-            n_values = []
-            for a in self.axes:
-                self.menus[0].set_to(a)
-                sleep(self.wait_time)
-                table = Table(self.driver, 0, table_type, self.wait_time)
-                n_values.append(len(table.text_rows))
-
-            self.axes_order = [
-                i[0] for i in sorted(enumerate(n_values), key=lambda x: x[1])
-            ]
+            self.optimize_axes()
             print(f"Reordering axes to {self.axes_order} for better performance... ", end="")
 
         for i, o in enumerate(self.axes_order):
@@ -762,6 +754,22 @@ class CollationEngine():
         # Check for valid optimize flag
         if type(optimize) != bool:
             raise TypeError("optimize must be of type bool")
+
+    def optimize_axes(self):
+        """Calculate order of axes from most options to fewest.
+        
+        Modifies self.axes_order.
+        """
+        n_values = []
+        for a in self.axes:
+            self.menus[0].set_to(a)
+            sleep(self.wait_time)
+            table = Table(self.driver, 0, self.table_type, self.wait_time)
+            n_values.append(len(table.text_rows))
+
+        self.axes_order = [
+            i[0] for i in sorted(enumerate(n_values), key=lambda x: x[1])
+        ]
 
     @staticmethod
     def get_driver(browser: SUPPORTED_BROWSERS, headless):
@@ -951,20 +959,26 @@ class CollationEngine():
                 f"{self.filename}."
             )
     
-    def set_axes(self, axis_names):
+    def set_axes(self, axis_names, verbose=False, optimize=False):
         """Set the axes to specified names."""
-        print(f"Setting axes to {axis_names}... ", end="")
+        if verbose:
+            print(f"Setting axes to {axis_names}... ", end="")
 
-        for i, name in enumerate(axis_names):
-            self.menus[i].set_to(name)
-            sleep(self.wait_time)
+        self.axes = axis_names
+        self.axes_order = list(range(len(axis_names)))
+
+        if optimize:
+            self.optimize_axes()
+
+        for i, o in enumerate(self.axes_order):
+            self.menus[i].set_to(self.axes[o])
 
     def recalculate_tables(self):
         if self.webpage_type in ('object-whole', 'object-broken'):
-            table_type = 'object'
+            self.table_type = 'object'
         elif self.webpage_type in ('link-whole', 'link-broken'):
-            table_type = 'link'
-        self.tables = [Table(self.driver, i, table_type, self.wait_time) for i in range(3)]
+            self.table_type = 'link'
+        self.tables = [Table(self.driver, i, self.table_type, self.wait_time) for i in range(3)]
 
     @staticmethod
     def get_axis_options(browser, url, headless):
