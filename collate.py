@@ -778,6 +778,8 @@ class CollationEngine():
             from selenium.webdriver import Chrome
             from selenium.webdriver.chrome.options import Options
             options = Options()
+            options.add_argument("--log-level=3")
+            options.add_experimental_option("excludeSwitches", ["enable-logging"])
             if headless:
                 options.add_argument('--headless')
             return Chrome(options=options)
