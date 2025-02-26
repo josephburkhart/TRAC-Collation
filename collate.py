@@ -872,9 +872,7 @@ class CollationEngine():
 
                         # Keep t2 tally for sanity check
                         t2_total_actual += sum(data[t1_row.name][t2_row.name].values())
-                        print(f"Table 2 row: {t2_row.name}\tactual   t3 total: {sum(data[t1_row.name][t2_row.name].values())}")
                 
-                print(f"Table 1 row: {t1_row.name}\tactual   t2 total: {t2_total_actual}")
                 t1_total_actual += t2_total_actual
         
         # Save data as attribute and convert to dataframe
