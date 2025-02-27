@@ -24,6 +24,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import sys
+import re
 
 ## Constants
 STANDALONE_PARAMS = {
@@ -182,7 +183,11 @@ class Table:
 
         # To calculate text rows, first get text, then filter for meaninful rows
         def is_meaningful(txt):
-            return (txt != "" and "All" not in txt and "Total" not in txt)
+            name, _, _ = txt.rpartition(" ")
+            return (
+                (name not in ["", "Total", "All"]) and
+                (not bool(re.fullmatch(r"All-.*", name)))
+            )
         
         text_rows = None
         attempt_count = 0
