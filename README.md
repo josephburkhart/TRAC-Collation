@@ -12,7 +12,7 @@
 >
 > ~~**2025-02-18:** I have found a bug that can silently cause errors in the saved datasets when using Chrome and Edge - Firefox seems unaffected. I am working on a solution. In the meantime, please use Firefox or wait for me to implement a solution.~~
 > 
-> **2025-02-25:** I have resolved the remaining bugs caused by TRAC's new website. In the process, I have had to drop support for Firefox and Safari. If you used this tool between February 1 and February 25, your dataset may contain errors, so you should pull down or copy the latest version of `collate.py` and use it to refresh your dataset. As always, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if you think this tool is not working properly.
+> **2025-02-25:** I have resolved the remaining bugs caused by TRAC's new website. ~~In the process, I have had to drop support for Firefox and Safari~~. If you used this tool between February 1 and February 25, your dataset may contain errors, so you should pull down or copy the latest version of `collate.py` and use it to refresh your dataset. As always, please file an [issue](https://github.com/josephburkhart/TRAC-Collation/issues/new?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen&template=Blank+issue) if you think this tool is not working properly.
 
 # TRAC-Collation
 This repository contains a tool for collating data published by the [Transactional Records Access Clearinghouse](https://tracreports.org/) (TRAC) in their [immigration toolkit](https://tracreports.org/immigration/tools/).
