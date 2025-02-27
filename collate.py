@@ -678,7 +678,7 @@ class CollationEngine():
         for m in self.menus:
             for a in self.axes:
                 if a not in m.option_names:
-                    raise ValueError(f"Axis name '{a}' could not be found")
+                    raise ValueError(f"Axis name '{a}' could not be found.")
 
         # Set Axes
         if self.optimize:
@@ -711,7 +711,7 @@ class CollationEngine():
         
         # Check for valid filename type
         if type(filename) not in (str, type(Path())):
-            raise TypeError(f"filename must be of type str or Path")
+            raise TypeError(f"filename must be of type str or Path.")
 
         # Make path of output file absolute
         filename = Path(filename)
@@ -740,17 +740,17 @@ class CollationEngine():
             if WEBPAGE_TYPES[url] in PARTIALLY_SUPPORTED_TYPES:
                 print("Warning: URL is not fully supported. Retrieving anyway...")
             elif url in WEBPAGE_TYPES.keys():
-                raise ValueError("URL is not supported")
+                raise ValueError("URL is not supported.")
             else:
-                raise ValueError("URL is not recognized")
+                raise ValueError("URL is not recognized.")
             
         # Check for valid headless flag
         if type(headless) != bool:
-            raise TypeError("headless must be of type bool")
+            raise TypeError("headless must be of type bool.")
         
         # Check for valid optimize flag
         if type(optimize) != bool:
-            raise TypeError("optimize must be of type bool")
+            raise TypeError("optimize must be of type bool.")
 
     def optimize_axes(self):
         """Calculate order of axes from most options to fewest.
@@ -985,20 +985,20 @@ class CollationEngine():
         if browser not in get_args(SUPPORTED_BROWSERS):
             msg = "browser must be one of the following: "
             msg += ', '.join(get_args(SUPPORTED_BROWSERS))
-            raise TypeError(msg)
+            raise TypeError(msg+".")
         
         # Check for valid URL
         if WEBPAGE_TYPES[url] not in FULLY_SUPPORTED_TYPES:
             if WEBPAGE_TYPES[url] in PARTIALLY_SUPPORTED_TYPES:
                 print("Warning: URL is not fully supported. Retrieving anyway...")
             elif url in WEBPAGE_TYPES.keys():
-                raise ValueError("URL is not supported")
+                raise ValueError("URL is not supported.")
             else:
-                raise ValueError("URL is not recognized")
+                raise ValueError("URL is not recognized.")
         
         # Check for valid headless flag
         if type(headless) != bool:
-            raise TypeError("headless must be of type bool")
+            raise TypeError("headless must be of type bool.")
             
         # Get axis options
         driver = CollationEngine.get_driver(browser, headless)
