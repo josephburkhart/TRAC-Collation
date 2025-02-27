@@ -94,8 +94,7 @@ STALE_REFERENCE_MAX_ATTEMPTS = 1000
 
 ## Classes
 class Table:
-    """
-    A Table is a collection of Rows.
+    """A Table is a collection of Rows.
     
     Args:
         driver: The webdriver object that is accessing the webpage.
@@ -573,8 +572,7 @@ class AxisMenu:
         return [o.name for o in self.options]
 
 class Option:
-    """
-    An Option is clickable and has a name.
+    """An Option is clickable and has a name.
     
     Args:
         clickable_web_element: The clickable web element for this Option.
@@ -588,8 +586,7 @@ class Option:
 
 
 class CollationEngine():
-    """
-    A CollationEngine coordinates the other classes in collating the webpage.
+    """A CollationEngine coordinates the other classes in collating the webpage.
 
     Args:
         browser: A string representing the name of the web browser to use for 
