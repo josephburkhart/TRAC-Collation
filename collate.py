@@ -278,15 +278,6 @@ class Table:
     def __repr__(self):
         return f"Table (i={self.table_index}, type={self.table_type})"
 
-# NOTE: Currently, we're trying to fix the issue with indexing by never storing
-#       a reference to any element, and just returning IndexErrors etc. The
-#       idea is to force the user to handle those possible errors on the calling
-#       side every time, and to minimize the number of places where something
-#       could get out-of-sync or otherwise go wrong.
-# 
-#       Another way could be to calculate those elements on initialization 
-#       and store them elements privately, but still just return Errors and
-#       handle them in calling contexts the same way.
 class Row:
     """A Row is clickable and has a name and a value.
     
