@@ -230,27 +230,43 @@ class Table:
 
     @property
     def web_element(self):
-        """
-        Web element for this Table, automatically calculated if necessary.
-        """
-        if self._web_element == None:
-            self._web_element = self.get_web_element(self.driver)
+        """Outermost web element for this Table, calculated if necessary."""
+        if self._web_element is None:
+            self.recalculate_web_element()
         return self._web_element
     
-    def get_web_element(self, driver, attempt_cap: int = -1):
+    def recalculate_web_element(self, attempt_cap: int=-1):
+        """Erase and re-calculate this Table's outermost web element.
+        
+        By default, the driver will keep polling the DOM indefinitely until it 
+        finds the correct element. Set `attempt_cap` to a positive value to 
+        limit the number of times the DOM can be polled.
+
+        Modifies:
+            self._web_element
+
+        Raises:
+            NoSuchElementException if this Table's outermost web element cannot 
+                be not found within the number of allowed attempts.
         """
-        Find the web element for this Table. By default, the driver will keep 
-        polling the DOM indefinitely until it finds the table. Set `attempt_cap`
-        to a positive value to limit the number of times the DOM can be polled.
-        """
-        wait = WebDriverWait(driver, TIMEOUT)
+        table_elements = None
         attempt_count = 0
-        while attempt_count < attempt_cap or attempt_cap < 0:
+        while (
+            (attempt_count < attempt_cap or attempt_cap < 0) and 
+            (table_elements is None)
+        ):
             try:
-                table_elements = wait.until(EC.presence_of_all_elements_located(self.table_query))
-            except TimeoutException as e:
-                print(f'Warning: {type(e)} encountered - table not found. Trying again... ({attempt_count = })')
+                wait = WebDriverWait(self.driver, TIMEOUT)
+                table_elements = wait.until(
+                    EC.presence_of_all_elements_located(self.table_query)
+                )
+            except (TimeoutException, NoSuchElementException) as e:
                 attempt_count += 1
+                if attempt_count == attempt_cap:
+                    raise NoSuchElementException(
+                        f"Could not find outermost web element for {self}."
+                    )
+                sleep(self.wait_time)
             else:
                 self._web_element = table_elements[self.table_index]
 
