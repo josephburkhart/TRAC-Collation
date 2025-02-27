@@ -133,136 +133,99 @@ class Table:
         elif self.table_type == 'link':
             self.row_query = (By.XPATH, ".//tr")
 
-        # Set instance row clickable element query attribute based on table type
-        if self.table_type == 'object':
-            self.row_clickable_query = None #because row_query is already clickable
-        elif self.table_type == 'link':
-            self.row_clickable_query = (By.XPATH, ".//td[@class='Data l']/a")
+        # Calculate all internal data at time of instantiation
+        self.recalculate_web_element()
+        self.recalculate_rows()
 
     @property
     def text_rows(self):
-        """
-        List of strings representing the useful rows from this Table, without
-        leading and trailing whitespace, and without headers.
+        """List of strings representing the useful rows from this Table.
+        
+        Headers and leading and/or trailing whitespace are removed.
         """
         if self._text_rows == []:
-            # Get text, filter for meaninful rows
-            def is_meaningful(text):
-                return (text != '' and 'All' not in text and 'Total' not in text)
-            try:
-                self._text_rows = self.web_element.text.split('\n')
-            except StaleElementReferenceException:
-                self.recalculate_web_element()
-                self._text_rows = self.web_element.text.split('\n')
-            self._text_rows = [r for r in self._text_rows if is_meaningful(r)]
+            self.recalculate_rows()
         return self._text_rows
     
     @property
     def rows(self):
-        """
-        List of Row objects for this Table, of the same length as text_rows.
-        """
+        """List of Rows for this Table, of the same length as self.text_rows."""
         # Calculate rows if necessary
         if self._rows == []:
-            # In object-type tables, text_rows are currently offset by 4 
-            # (1-3 are empty, 4 is header) (NOTE: this could change)
-            if self.table_type == 'object':
-                self._rows = [Row(self, i+4, self.row_query) for i in range(len(self.text_rows))]
-            
-            # In link-type tables, text_rows are currently offset by 2 (header) 
-            # (NOTE: this could change)
-            elif self.table_type == 'link':
-                self._rows = [Row(self, i+2, self.row_query) for i in range(len(self.text_rows))]
-            
+            self.recalculate_rows()
         return self._rows
     
-    def recalculate_rows(self, also_web_elements=False, also_clickable_web_elements=False):
-        """Erase and re-generate all internal data about rows.
+    def recalculate_rows(self, attempt_cap: int=-1):
+        """Erase and re-calculate all internal data about rows.
+
+        Because getting the row data requires parsing text from this Table's web
+        element, it can fail if the web element cannot be found. By default, if
+        this Table's web element cannot be found, this method will keep calling
+        self.recalculate_web_element() until it can successfully find it. Set
+        `attempt_cap` to a positive value to limit the number of times 
+        that self.recalculate_web_element() can be called.
+
+        Modifies:
+            self._text_rows
+            self._rows
         
-        By default, does not recalculate web elements or clickable web elements.
+        Raises:
+            NotImplementedError if this Table's table_type is not recognized. 
+                The purpose of this is to make sure that when support for new 
+                table types is added elsewhere, it must also be added here.
+            NoSuchElementException if this Table's outermost web element cannot 
+                be not found within the number of allowed attempts.
         """
         self._text_rows = []
-        self._text_rows = self.text_rows
-
         self._rows = []
-        self._rows = self.rows  # better way to use setter?
 
-        if also_web_elements:
-            self.calculate_all_row_web_elements()
+        # To calculate text rows, first get text, then filter for meaninful rows
+        def is_meaningful(txt):
+            return (txt != "" and "All" not in txt and "Total" not in txt)
         
-        if also_clickable_web_elements:
-            self.calculate_all_row_clickable_web_elements()
-
-
-    def calculate_all_row_web_elements(self, also_rows=False):
-        """
-        Calculate web elements for all Row objects in this Table, and assign 
-        each one to its respective Row.
-        
-        This method is faster than calling Row.get_web_element() on each Row
-        object because it polls the DOM for all of the elements at once.
-
-        Returns: None
-        """
-        # Calculate rows if necessary
-        if self._rows == [] or also_rows:
-            self.recalculate_rows()
-      
-        # Calculate all row elements
-        try:
-            wait = WebDriverWait(self.web_element, TIMEOUT)
-            new_row_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_query))
-        except StaleElementReferenceException:
-            self.recalculate_web_element()
-            wait = WebDriverWait(self.web_element, TIMEOUT)
-            new_row_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_query))
-
-        # Re-assign row elements
-        # TODO: figure out why IndexError is sometimes thrown
-        try:
-            for r in self._rows:
-                r.web_element = new_row_web_elements[r.row_index]
-        except IndexError:
-            self.recalculate_rows()
-            for r in self._rows:
-                r.web_element = new_row_web_elements[r.row_index]
-
-    def calculate_all_row_clickable_web_elements(self, also_rows=False):
-        """
-        Calculate clickable web elements for all Row objects in this Table, and
-        assign each one to its respective Row.
-
-        This method is faster than calling Row.get_web_element() on each Row
-        object because it polls the DOM for all of the clickable elements at 
-        once.
-        """
-        # Calculate rows if necessary
-        if self._rows == [] or also_rows:
-            self.recalculate_rows()
-      
-        # Rows for which web_element is already clickable
-        if self.row_clickable_query == None:
-            if self._rows[0]._web_element == None:  #TODO: stick to public attrs
-                self.calculate_all_row_web_elements()
+        text_rows = None
+        attempt_count = 0
+        while (
+            (attempt_count < attempt_cap or attempt_cap < 0) and
+            (text_rows is None)
+        ):
+            try:
+                text_rows = self.web_element.text.split('\n')
+            
+            except StaleElementReferenceException:
+                attempt_count += 1
+                if attempt_count == attempt_cap:
+                    raise NoSuchElementException(
+                        f"Could not find outermost web element for {self}."
+                    )
+                sleep(self.wait_time)
+                self.recalculate_web_element()
+            
             else:
-                for r in self._rows:
-                    r.clickable_web_element = r.web_element
+                self._text_rows = [r for r in text_rows if is_meaningful(r)]
+
+        # To calculate rows, instantiate Row objects for every item in text rows
+        # In object-type tables, text_rows are currently offset by 4 
+        # (1-3 are empty, 4 is header) (NOTE: this could change)
+        if self.table_type == 'object':
+            row_indices = [i+4 for i in range(len(self.text_rows))]
+        
+        # In link-type tables, text_rows are currently offset by 2 (header) 
+        # (NOTE: this could change)
+        elif self.table_type == 'link':
+            row_indices = [i+2 for i in range(len(self.text_rows))]
         
         else:
-            # Calculate all clickable row elements
-            wait = WebDriverWait(self.web_element, TIMEOUT)
-            new_row_clickable_web_elements = wait.until(EC.presence_of_all_elements_located(self.row_clickable_query))
-
-            # Re-assign clickable row elements
-            # Table.calculate_all_row_web_elements() can encounter an IndexError
-            # so I should prepare for encountering one here as well
-            try:
-                for r in self._rows:
-                    r.clickable_web_element = new_row_clickable_web_elements[r.row_index]   #TODO: check indexing
-            except IndexError:
-                self.recalculate_rows()
-                for r in self._rows:
-                    r.clickable_web_element = new_row_clickable_web_elements[r.row_index]
+            raise NotImplementedError(
+                f"Table type {self.table_type} not yet supported."
+            )
+        
+        for i, r in enumerate(self.text_rows):
+            name, _, value = r.rpartition(" ")
+            value = int(value.replace(",", ""))
+            self._rows.append(
+                Row(name, value, self, row_indices[i], self.row_query)
+            )
 
     @property
     def web_element(self):
@@ -288,163 +251,149 @@ class Table:
                 print(f'Warning: {type(e)} encountered - table not found. Trying again... ({attempt_count = })')
                 attempt_count += 1
             else:
-                return table_elements[self.table_index]
-    
-    def recalculate_web_element(self):
-        self._web_element = None
-        self._web_element = self.web_element    # better way to use setter?
+                self._web_element = table_elements[self.table_index]
 
+    def __repr__(self):
+        return f"Table (i={self.table_index}, type={self.table_type})"
+
+# NOTE: Currently, we're trying to fix the issue with indexing by never storing
+#       a reference to any element, and just returning IndexErrors etc. The
+#       idea is to force the user to handle those possible errors on the calling
+#       side every time, and to minimize the number of places where something
+#       could get out-of-sync or otherwise go wrong.
+# 
+#       Another way could be to calculate those elements on initialization 
+#       and store them elements privately, but still just return Errors and
+#       handle them in calling contexts the same way.
 class Row:
-    """
-    A Row is clickable and has a name and a value.
+    """A Row is clickable and has a name and a value.
     
+    Rows are initialized with their name, value, and the data needed to find
+    their clickable element. They are intended to be used only as data
+    structures that can be clicked. Therefore, no methods are provided for
+    modifying their data after initialization, and the user should expect that
+    the one actual method, self.click(), will occasionally throw an IndexError
+    or StaleReferenceElementException. All uses of self.click() must therefore
+    catch these errors.
+
     Args:
+        name: A string representing the "name" of this Row, which is located in
+            the row's leftmost column.
+        value: An integer representing the "value" of this Row, which is located
+            in the rightmost column.
         parent_table: The Table object that contains this Row.
         row_index: A string indicating which row in `parent_table` this Row
                    corresponds to. Index order is ascending from top to bottom.
         query: A tuple representing the query to use when polling the DOM for
                this row's web element. Example: `(By.CLASS_NAME, 'table-fixed')`
     """
-    def __init__(self, parent_table: Table, row_index: int, query: tuple):
-        # Set initial instance attributes
-        self.parent_table = parent_table
-        self.row_index = row_index
-        self.query = query
-
+    def __init__(self, name: str, value: int, parent_table: Table, 
+                 row_index: int, query: tuple):
         # Set private/container instance attributes
-        self._web_element = None
-        self._clickable_web_element = None
-        self._name = None
-        self._value = None
+        self._name = name
+        self._value = value
+        self._parent_table = parent_table
+        self._row_index = row_index
+        self._query = query
 
-    @property
-    def web_element(self):
-        """Web element for this Table, automatically calculated if necessary."""
-        if self._web_element == None:
-            self._web_element = self.recalculate_web_element()
-        return self._web_element
-    
-    @web_element.setter
-    def web_element(self, e):
-        """Whenenver the web element is explicitly set, recalculate the name and value."""
-        self._web_element = e
-        self.recalculate_name_and_value()
-
-    def recalculate_web_element(self, attempt_cap: int = -1, recalculate_table_element: bool = False):
-        """Find the web element for this Row. By default, the driver will keep
-        polling the DOM indefinitely until it finds the row. Set `fail_cap` to
-        a positive value to limit the number of times the DOM can be polled.
-        
-        Optionally, a flag can be set to recalculate the web element for the
-        parent if the row cannot be found (defaults to False)."""
-        attempt_count = 0
-        while attempt_count < attempt_cap or attempt_cap < 0:
-            try:
-                wait = WebDriverWait(self.parent_table.web_element, TIMEOUT)
-                elements = wait.until(EC.presence_of_all_elements_located(self.query))
-            except (TimeoutException, NoSuchElementException) as e:
-                print(f'Warning: {type(e)} was encountered - row could not be found. Trying again... ({attempt_count = })')
-                attempt_count += 1
-                if recalculate_table_element:
-                    self.parent_table.recalculate_web_element()
-            else:
-                try:    # TODO: this is ugly
-                    return elements[self.row_index]
-                except IndexError:
-                    raise IndexError(f"{self.row_index=}, {len(elements)=}, {elements=}")
-
-    @property
-    def clickable_web_element(self):
-        """
-        Web element for this Row that can be clicked to filter other Tables.
-        """
-        # Recalculate clickable element if necessary
-        if self._clickable_web_element == None:
-            # Row queries defined in Table.rows correspond to the following:
-            # object rows are already clickable
-            # TODO: to re-factor for consistency, create get_clickable_web_element()
-            if self.parent_table.table_type == 'object':
-                self._clickable_web_element = self.web_element
-            
-            # link rows must be further searched to find the clickable links
-            elif self.parent_table.table_type == 'link':
-                wait = WebDriverWait(self.web_element, TIMEOUT)
-                self._clickable_web_element = wait.until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, ".//td[@class='Data l']/a")
-                    )
-                )
-        
-        return self._clickable_web_element
-    
-    @clickable_web_element.setter
-    def clickable_web_element(self, e):
-        self._clickable_web_element = e
-    
-    def recalculate_clickable_web_element(self):
-        self._clickable_web_element = None
-        self._clickable_web_element = self.clickable_web_element
-    
-    def click(self):
-        attempt_count = 0
-        while attempt_count < STALE_REFERENCE_MAX_ATTEMPTS:
-            try:
-                self.clickable_web_element.click()
-                break
-            except StaleElementReferenceException as e:
-                print(f"Warning: {e} encountered - row could not be found. Trying again... ({attempt_count = })")
-                attempt_count += 1
-
-                self.parent_table.calculate_all_row_web_elements()
-                self.parent_table.calculate_all_row_clickable_web_elements()
-                # self.recalculate_web_element()
-                # self.recalculate_clickable_web_element()
-                sleep(self.parent_table.wait_time)
-
-    
     @property
     def name(self):
-        """Name of this Row, corresponding to the text in the left column."""
-        if self._name == None:
-            attempt_count = 0
-            while attempt_count < STALE_REFERENCE_MAX_ATTEMPTS:
-                try:
-                    self._name = self.web_element.text.rsplit(' ', 1)[0]
-                    break
-                except StaleElementReferenceException as e:
-                    print(f"Warning: {e} encountered - row could not be found. Trying again... ({attempt_count = })")
-                    attempt_count += 1
-
-                    self.parent_table.calculate_all_row_web_elements()  # previously self.recalculate_web_element()
-                    sleep(self.parent_table.wait_time)
-        
+        """The "name" of this Row, which is located in the leftmost column."""
         return self._name
     
     @property
     def value(self):
-        """Value of this Row, corresponding to the text in the right column."""
-        if self._value == None:
-            attempt_count = 0
-            while attempt_count < STALE_REFERENCE_MAX_ATTEMPTS:
-                try:
-                    self._value = int(self.web_element.text.rsplit(' ', 1)[1].replace(",", ""))
-                except StaleElementReferenceException as e:
-                    print(f"Warning: {e} encountered - row could not be found. Trying again... ({attempt_count = })")
-                    attempt_count += 1
-
-                    self.parent_table.calculate_all_row_web_elements()  # previously self.recalculate_web_element()
-                    sleep(self.parent_table.wait_time)
-                else:
-                    break
-
+        """The "value" of this Row, which is located in the rightmost column."""
         return self._value
-    
-    def recalculate_name_and_value(self):
-        self._name = None
-        self._name = self.name
 
-        self._value = None
-        self._value = self.value
+    def click(self, attempt_cap: int=-1):
+        """Find this Row's clickable web element and click it.
+        
+        This method calculates the clickable web element on the fly, ensuring
+        that references to elements are never stored.
+        
+        By default, the driver will keep polling the DOM indefinitely until it 
+        finds the correct web element. Set `fail_cap` to a positive value to 
+        limit the number of times the DOM can be polled.
+
+        Raises:
+            NoSuchElementException if this Row's outermost web element or
+                clickable web element cannot be not found within the number of
+                allowed attempts.
+            IndexError if the index of this Row at time of initialization 
+                exceeds the number of outermost web elements found in the DOM.
+            NotImplementedError if the Row's table_type is not recognized. The
+                purpose of this is to make sure that when support for new table
+                types is added elsewhere, it must also be added here.
+        """
+        # First find the row's outermost web element
+        attempt_count = 0
+        web_element = None
+        while (
+            (attempt_count < attempt_cap or attempt_cap < 0) and 
+            (web_element is None)
+        ):
+            try:
+                wait = WebDriverWait(self._parent_table.web_element, TIMEOUT)
+                elements = wait.until(
+                    EC.presence_of_all_elements_located(self._query)
+                )
+            except (TimeoutException, NoSuchElementException) as e:
+                attempt_count += 1
+                if attempt_count == attempt_cap:
+                    raise NoSuchElementException(
+                        f"Could not find outermost web element for {self}."
+                    )
+                sleep(self._parent_table.wait_time)
+
+            else:
+                web_element = elements[self._row_index] # can raise IndexError  
+                break
+
+        # Then find the clickable element within that outermost element
+        table_type = self._parent_table.table_type
+        clickable_web_element = None
+
+
+        # Row queries defined in Table.rows correspond to the following:
+        # object rows are already clickable
+        if table_type == 'object':
+            clickable_web_element = web_element
+        
+        # link rows must be further searched to find the clickable links
+        elif table_type == 'link':
+            attempt_count = 0
+            while (
+                (attempt_count < attempt_cap or attempt_cap < 0) and 
+                (clickable_web_element is None)
+            ):
+                try:
+                    wait = WebDriverWait(web_element, TIMEOUT)
+                    clickable_web_element = wait.until(
+                        EC.presence_of_element_located(
+                            (By.XPATH, ".//td[@class='Data l']/a")
+                        )
+                    )
+                except (TimeoutException, NoSuchElementException) as e:
+                    attempt_count += 1
+                    if attempt_count == attempt_cap:
+                        raise NoSuchElementException(
+                            f"Could not find clickable web element for {self}."
+                        )
+                    sleep(self._parent_table.wait_time)
+        
+        else:
+            raise NotImplementedError(
+                f"Table type {table_type} not yet supported."
+            )
+        
+        # Now that we have the clickable web element, click it
+        clickable_web_element.click()
+
+    def __repr__(self):
+        return (
+            f"Row (i={self._row_index}, name={self._name}, value={self._value})"
+        )
 
 class AxisMenu:
     """
