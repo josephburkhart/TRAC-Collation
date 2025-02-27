@@ -775,69 +775,93 @@ class CollationEngine():
         Create a dataset of nested dictionaries from the webpage.
         """
         # Set progress bar formatting
-        pbar_format = "{desc}{percentage:3.0f}%|{bar:30}| {n_fmt}/{total_fmt} [{rate_fmt}{postfix}]"
+        pbar_format = (
+            "{desc}{percentage:3.0f}%|{bar:30}| " + 
+            "{n_fmt}/{total_fmt} [{rate_fmt}{postfix}]"
+        )
         
         # Initialize data container dictionary
         data = {}
 
-        # Iterate over table 1 rows
-        self.tables[0].recalculate_rows()
+        # Unpack tables for easier indexing
+        table_1, table_2, table_3 = self.tables
+
+        # Refresh table 1 rows
+        table_1.recalculate_rows()
         sleep(self.wait_time)
 
-        t1_total_expected = sum([r.value for r in self.tables[0].rows])
+        # Iterate over table 1 rows
+        t1_total_expected = sum([r.value for r in table_1.rows])
         t1_total_actual = 0
-
         while t1_total_expected != t1_total_actual:
             t1_total_actual = 0
 
-            pbar1 = tqdm(
-                range(len(self.tables[0].text_rows)), 
-                leave=False, 
-                bar_format=pbar_format
-            )
+            pbar1 = tqdm(range(len(table_1.rows)), leave=False, bar_format=pbar_format)
             for i in pbar1:
-                # self.tables[0].recalculate_rows()
-                t1_row = self.tables[0].rows[i]
+                t1_row = table_1.rows[i]
                 pbar1.set_description(shorten(f"Table 1: {t1_row.name}"))
 
                 data[t1_row.name] = {}
 
-                t1_row.click()
-                sleep(self.wait_time)
-                self.tables[1].recalculate_rows()
+                # Attempt to click current table 1 row
+                try:
+                    t1_row.click()
+                except NoSuchElementException:
+                    table_1.recalculate_rows()
+                    t1_row = table_1.rows[i]
+                    t1_row.click()
+                except IndexError:
+                    raise RuntimeError(
+                        f"IndexError encountered for {table_1}, {t1_row}."
+                    )
                 
-                while t1_row.value != sum([r.value for r in self.tables[1].rows]):
+                # Refresh table 2 rows
+                sleep(self.wait_time)
+                table_2.recalculate_rows()
+
+                # Ensure that table 2 rows add up to the total expected from the
+                # value of the current table 1 row
+                t2_total_expected = t1_row.value
+                while t2_total_expected != sum([r.value for r in table_2.rows]):
                     sleep(self.wait_time)
-                    self.tables[1].recalculate_rows()
+                    table_2.recalculate_rows()
                     
                 # Iterate over table 2 rows
-                t2_total_expected = t1_row.value
                 t2_total_actual = 0
-
                 while t2_total_expected != t2_total_actual:
                     t2_total_actual = 0
 
-                    pbar2 = tqdm(
-                        range(len(self.tables[1].text_rows)), 
-                        leave=False, 
-                        bar_format=pbar_format
-                    )
+                    pbar2 = tqdm(range(len(table_2.rows)), leave=False, bar_format=pbar_format)
                     for j in pbar2:
-                        # self.tables[1].recalculate_rows()
-                        t2_row = self.tables[1].rows[j]
+                        t2_row = table_2.rows[j]
                         pbar2.set_description(shorten(f"Table 2: {t2_row.name}")) 
 
-                        t2_row.click()
+                        # Attempt to click current table 2 row
+                        try:
+                            t2_row.click()
+                        except NoSuchElementException:
+                            table_2.recalculate_rows()
+                            t2_row = table_2.rows[j]
+                            t2_row.click()
+                        except IndexError:
+                            raise RuntimeError(
+                                f"IndexError encountered for {table_1}, "
+                                f"{t1_row}, {table_2}, {t2_row}."
+                            )
 
+                        # Refresh table 3 rows
                         sleep(self.wait_time)
-                        self.tables[2].recalculate_rows()
+                        table_3.recalculate_rows()
 
-                        while t2_row.value != sum([r.value for r in self.tables[2].rows]):
+                        # Ensure that table 3 rows add up to the total expected 
+                        # from the value of the current table 2 row
+                        t3_total_expected = t2_row.value
+                        while t3_total_expected != sum([r.value for r in table_3.rows]):
                             sleep(self.wait_time)
-                            self.tables[2].recalculate_rows()
+                            table_3.recalculate_rows()
 
                         # Copy rows from table 3 into the data dictionary
-                        t3_rows = self.tables[2].text_rows
+                        t3_rows = table_3.text_rows
                         t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
                         t3_rows = [[r[0], int(r[1].replace(',', ''))] for r in t3_rows]
                         data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
