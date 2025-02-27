@@ -3,6 +3,10 @@ from pathlib import Path
 from collate import CollationEngine, SUPPORTED_BROWSERS
 from typing import get_args
 import pandas as pd
+import warnings
+from tables import NaturalNameWarning
+
+warnings.filterwarnings("ignore", category=NaturalNameWarning)
 
 SINGLE_DATASETS = [
     (
