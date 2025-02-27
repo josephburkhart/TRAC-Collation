@@ -413,8 +413,7 @@ class Row:
         )
 
 class AxisMenu:
-    """
-    An AxisMenu is a clickable collection of Options.
+    """An AxisMenu is a clickable collection of Options.
     
     Args:
         driver: The webdriver object that is accessing the webpage.
