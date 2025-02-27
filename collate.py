@@ -90,7 +90,7 @@ SUPPORTED_BROWSERS = Literal['Chrome', 'Edge']
 
 WAIT_TIME_FOR_POPULATION = 0.1
 
-STALE_REFERENCE_MAX_ATTEMPTS = 1000
+# STALE_REFERENCE_MAX_ATTEMPTS = 1000
 
 ## Classes
 class Table:
@@ -176,6 +176,7 @@ class Table:
             NoSuchElementException if this Table's outermost web element cannot 
                 be not found within the number of allowed attempts.
         """
+        # Erase current values
         self._text_rows = []
         self._rows = []
 
