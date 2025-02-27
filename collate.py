@@ -844,7 +844,7 @@ class CollationEngine():
                                 f"IndexError encountered for {table_1}, "
                                 f"{t1_row}, {table_2}, {t2_row}."
                             )
-
+                        
                         # Refresh table 3 rows
                         sleep(self.wait_time)
                         table_3.recalculate_rows()
