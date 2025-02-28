@@ -718,20 +718,70 @@ class CollationEngine():
             raise TypeError("optimize must be of type bool.")
 
     def optimize_axes(self):
-        """Calculate order of axes from most options to fewest.
+        """Calculate the optimal order of axes to minimize clicks and waits.
+
+        The first/leftmost axis will be the one with the fewest possible values.
+        The second/middle axis will be the one which has the smallest average
+        number of possible values in table 2 across all possible values in table
+        1. The third/rightmost axis will be the only axis remaining.
         
-        Modifies self.axes_order.
+        Modifies:
+            self.axes_order
+        
+        Raises:
+            RuntimeError if there's an issue with clicking a row.
         """
-        n_values = []
-        for a in self.axes:
+        input_axes = copy(self.axes)
+
+        # Determine first axis
+        n_possible_t1 = []
+        for a in input_axes:
             self.menus[0].set_to(a)
             sleep(self.wait_time)
-            table = Table(self.driver, 0, self.table_type, self.wait_time)
-            n_values.append(len(table.text_rows))
+            table_1 = Table(self.driver, 0, self.table_type, self.wait_time)
+            n_possible_t1.append(len(table_1.rows))
 
-        self.axes_order = [
-            i[0] for i in sorted(enumerate(n_values), key=lambda x: x[1])
-        ]
+        axis_1_index = n_possible_t1.index(min(n_possible_t1))
+        axis_1 = input_axes.pop(axis_1_index)
+        
+        # Determine second axis
+        self.menus[0].set_to(axis_1)
+        sleep(self.wait_time)
+
+        avg_n_possible_t2 = []
+        for a in input_axes:
+            self.menus[1].set_to(a)
+            table_1.recalculate_rows()
+            sleep(self.wait_time)
+            table_2 = Table(self.driver, 1, self.table_type, self.wait_time)
+
+            total_n_possible_t2 = 0
+            for i in list(range(len(table_1.text_rows))):
+                try:
+                    table_1.rows[i].click()
+                except NoSuchElementException:
+                    table_1.recalculate_rows()
+                    sleep(self.wait_time)
+                    table_1.rows[i].click()
+                except IndexError:
+                    row = table_1.rows[i]
+                    raise RuntimeError(
+                        f"IndexError encountered for {table_1}, {row}."
+                    )
+                else:
+                    total_n_possible_t2 += len(table_2.rows)
+                    print(f"For {a}, {i}, {total_n_possible_t2=}")
+            
+            avg_n_possible_t2.append(total_n_possible_t2/len(table_1.rows))
+            
+        axis_2_index = avg_n_possible_t2.index(min(avg_n_possible_t2))
+        axis_2 = input_axes.pop(axis_2_index)
+
+        # Third axis is the only one remaining
+        axis_3 = input_axes[0]
+                   
+        # Calculate the optimized order
+        self.axes_order = [self.axes.index(a) for a in [axis_1, axis_2, axis_3]]
 
     @staticmethod
     def get_driver(browser: SUPPORTED_BROWSERS, headless):
