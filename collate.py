@@ -770,7 +770,6 @@ class CollationEngine():
                     )
                 else:
                     total_n_possible_t2 += len(table_2.rows)
-                    print(f"For {a}, {i}, {total_n_possible_t2=}")
             
             avg_n_possible_t2.append(total_n_possible_t2/len(table_1.rows))
             
