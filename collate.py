@@ -9,7 +9,9 @@ the standalone script, see STANDALONE_PARAMS below.
 ## Browser-agnostic imports
 # Note: Browser-specific imports are handled in CollateEngine.get_driver()
 import warnings
+from tables import NaturalNameWarning
 warnings.filterwarnings("ignore", category=DeprecationWarning)       # ignore warnings from pandas
+warnings.filterwarnings("ignore", category=NaturalNameWarning)       # ignore warnings from pyTables
 
 from pathlib import Path
 import os
