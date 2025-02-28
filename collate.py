@@ -731,7 +731,7 @@ class CollationEngine():
         Raises:
             RuntimeError if there's an issue with clicking a row.
         """
-        input_axes = copy(self.axes)
+        input_axes = list(copy(self.axes))
 
         # Determine first axis
         n_possible_t1 = []
