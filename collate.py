@@ -27,6 +27,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import sys
 import re
+from copy import copy
 
 ## Constants
 STANDALONE_PARAMS = {
@@ -185,9 +186,10 @@ class Table:
 
         # To calculate text rows, first get text, then filter for meaninful rows
         def is_meaningful(txt):
-            name, _, _ = txt.rpartition(" ")
+            name, _, value = txt.rpartition(" ")
             return (
-                (name not in ["", "Total", "All"]) and
+                (name.strip() not in ["", "Total", "All"]) and
+                (value.strip() not in ["", "Total", "All"]) and     # TODO: this is needed because sometimes "Total" winds up in value - I should check to make sure I'm finding the rows of link-whole tables correctly
                 (not bool(re.fullmatch(r"All-.*", name)))
             )
         
