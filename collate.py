@@ -821,8 +821,14 @@ class CollationEngine():
             return Safari(options=options)
 
     def create_dataset(self):
-        """
-        Create a dataset of nested dictionaries from the webpage.
+        """Create a dataset of nested dictionaries from the webpage.
+
+        Modifies:
+            self.data
+            self.df
+
+        Raises:
+            RuntimeError if there's an issue with clicking a row.
         """
         # Set progress bar formatting
         pbar_format = (
