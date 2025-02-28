@@ -877,9 +877,14 @@ class CollationEngine():
                 # Ensure that table 2 rows add up to the total expected from the
                 # value of the current table 1 row
                 t2_total_expected = t1_row.value
-                while t2_total_expected != sum([r.value for r in table_2.rows]):
+                attempt_cap_1 = 1000
+                attempt_count_1 = 0
+                while (t2_total_expected != sum([r.value for r in table_2.rows])) and (attempt_count_1 < attempt_cap_1):
                     sleep(self.wait_time)
                     table_2.recalculate_rows()
+                    attempt_count_1 += 1
+                    if attempt_count_1 == attempt_cap_1:
+                        raise RuntimeError("Could not make Table 2 total expected equal Table 2 total actual")
                     
                 # Iterate over table 2 rows
                 t2_total_actual = 0
@@ -911,9 +916,14 @@ class CollationEngine():
                         # Ensure that table 3 rows add up to the total expected 
                         # from the value of the current table 2 row
                         t3_total_expected = t2_row.value
-                        while t3_total_expected != sum([r.value for r in table_3.rows]):
+                        attempt_cap_2 = 1000
+                        attempt_count_2 = 0
+                        while (t3_total_expected != sum([r.value for r in table_3.rows])) and (attempt_count_2 < attempt_cap_2):
                             sleep(self.wait_time)
                             table_3.recalculate_rows()
+                            attempt_count_2 += 1
+                            if attempt_count_2 == attempt_cap_2:
+                                raise RuntimeError("Could not make Table 3 total expected equal Table 3 total actual")
 
                         # Copy rows from table 3 into the data dictionary
                         t3_rows = table_3.text_rows
