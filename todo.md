@@ -20,24 +20,3 @@
 | https://tracreports.org/phptools/immigration/detention/               | link-broken     | 1 additional axis (17 possible values) - total of 680 * 17 = 11,560   possible combinations!                                                                |
 | https://tracreports.org/immigration/detentionstats/facilities.html    | table-only-2    | simple - just copy the table once                                                                                                                           |
 | https://tracreports.org/immigration/detentionstats/atd_pop_table.html | table-only-2    | simple - just copy the table once 
-
-
-- [ ] investigate why everything.py fails with the following:
-    - asyfile: 
-        - ('Month and Year Application Filed', 'Immigration Court', 'Nationality')
-        - ('Month and Year Application Filed', 'Immigration Court', 'Language')
-        - ('Fiscal Year Application Filed', 'Immigration Court', 'Hearing Attendance')
-        - ('Fiscal Year Application Filed', 'Language', 'Custody')
-    - asylum:
-        - ('Month and Year of Decision', 'Immigration Court State', 'Immigration Court')
-        - ('Month and Year of Decision', 'Immigration Court State', 'Language')
-        - Note: these all seem to work solo, but note that they all have excessive numbers of rows. In at least some cases, e.g. ('Month and Year of Decision', 'Immigration Court State', 'Immigration Court'), this is needlessly large, because one axis actually only has one or two values for each unique value of the other - 'Immigration Court' and 'Immigration Court State'. 
-            - One easy fix might be to just keep re-calling scrape() on the url until all of the axes worked
-            - Another less-easy fix would be to improve the optimization process. Instead of just arranging axes from lowest number of individual values to highest, we would instead see how many options each axis would have for each value of each other axis, then take the average of those numbers and...
-            - Update: I have now implemented both of these fixes
-    - mpp4: 
-        - can't even get started - first set of axes should be ('Fiscal Year Case Began', 'Month and Year Case Began', 'New MPP Case Since Jan 2021')
-            - it works fine in solo testing - maybe I just can't have more than 1 or 2 browser instances going.
-            - Let's test by running everything.py with just this url --> that works
-            - Let's test by running everything.py with just this and one other url --> that also works
-            - Ok, so that probably means that on Tuikku, I should only try to parallelize to 2 URLs at a time
