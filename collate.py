@@ -114,7 +114,7 @@ class Table:
                  table_index: int, 
                  table_type: Literal['object', 'link'],
                  wait_time: float):
-        # Set initial instance attributes
+        # Set public instance attributes
         self.driver = driver
         self.table_index = table_index
         self.table_type = table_type
@@ -1078,14 +1078,6 @@ class CollationEngine():
                         raise RuntimeError("Could not make Table 2 total expected equal Table 2 total actual")
 
                     table_2.recalculate_rows()
-                    
-                    # Every 500 attempts, try clicking away and then back
-                    # if (attempt_count_1+1) % 500 == 0:
-                    #     away_index = i-1 if i > 0 else 1
-                    #     table_1.rows[away_index].click()
-                    #     sleep(self.wait_time)
-                    #     t1_row.click()
-                    #     sleep(self.wait_time)
 
                     # Every 500 attempts, try a longer sleep
                     if (attempt_count_1+1) % 500 == 0:
@@ -1143,14 +1135,6 @@ class CollationEngine():
                                 raise RuntimeError("Could not make Table 3 total expected equal Table 3 total actual")
 
                             table_3.recalculate_rows()
-
-                            # Every 500 attempts, try clicking away and then back
-                            # if (attempt_count_2+1) % 500 == 0:
-                            #     away_index = j-1 if j > 0 else 1
-                            #     table_2.rows[away_index].click()
-                            #     sleep(self.wait_time)
-                            #     t2_row.click()
-                            #     sleep(self.wait_time)
 
                             # Every 500 attempts, try a longer sleep
                             if (attempt_count_2+1) % 500 == 0:
