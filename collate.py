@@ -1059,6 +1059,7 @@ class CollationEngine():
                     )
                 
                 # Refresh table 2 rows
+                sleep(self.wait_time)
                 table_2.recalculate_rows()
 
                 # Ensure that table 2 rows add up to the total expected from the
@@ -1079,16 +1080,22 @@ class CollationEngine():
                     table_2.recalculate_rows()
                     
                     # Every 500 attempts, try clicking away and then back
-                    if (attempt_count_1+1) % 500 == 0:
-                        away_index = i-1 if i > 0 else 1
-                        table_1.rows[away_index].click()
-                        sleep(TIMEOUT)
-                        table_1.rows[i].click()
-                        sleep(TIMEOUT)
+                    # if (attempt_count_1+1) % 500 == 0:
+                    #     away_index = i-1 if i > 0 else 1
+                    #     table_1.rows[away_index].click()
+                    #     sleep(self.wait_time)
+                    #     t1_row.click()
+                    #     sleep(self.wait_time)
 
-                    # Every 100 attempts, try a longer sleep
-                    elif (attempt_count_1+1) % 100 == 0:
+                    # Every 500 attempts, try a longer sleep
+                    if (attempt_count_1+1) % 500 == 0:
                         sleep(TIMEOUT) 
+
+                    # Every 1000 attempts, try recalculating the expected value
+                    if (attempt_count_1+1) % 1000 == 0:
+                        table_1.recalculate_rows()
+                        t1_row = table_1.rows[i]
+                        t2_total_expected = t1_row.value
 
                     else:
                         sleep(self.wait_time)
@@ -1117,6 +1124,7 @@ class CollationEngine():
                             )
                         
                         # Refresh table 3 rows
+                        sleep(self.wait_time)
                         table_3.recalculate_rows()
 
                         # Ensure that table 3 rows add up to the total expected 
@@ -1137,16 +1145,22 @@ class CollationEngine():
                             table_3.recalculate_rows()
 
                             # Every 500 attempts, try clicking away and then back
-                            if (attempt_count_2+1) % 500 == 0:
-                                away_index = j-1 if j > 0 else 1
-                                table_2.rows[away_index].click()
-                                sleep(TIMEOUT)
-                                table_2.rows[j].click()
-                                sleep(TIMEOUT)
+                            # if (attempt_count_2+1) % 500 == 0:
+                            #     away_index = j-1 if j > 0 else 1
+                            #     table_2.rows[away_index].click()
+                            #     sleep(self.wait_time)
+                            #     t2_row.click()
+                            #     sleep(self.wait_time)
 
-                            # Every 100 attempts, try a longer sleep
-                            elif (attempt_count_2+1) % 100 == 0:
-                                sleep(TIMEOUT) 
+                            # Every 500 attempts, try a longer sleep
+                            if (attempt_count_2+1) % 500 == 0:
+                                sleep(TIMEOUT)
+                            
+                            # Every 1000 attempts, try recalculating the expected value
+                            if (attempt_count_2+1) % 1000 == 0:
+                                table_2.recalculate_rows()
+                                t2_row = table_2.rows[j]
+                                t3_total_expected = t2_row.value
                             
                             else:
                                 sleep(self.wait_time)
