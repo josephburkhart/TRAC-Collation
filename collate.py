@@ -87,7 +87,7 @@ WEBPAGE_TYPES = {
 FULLY_SUPPORTED_TYPES = ['object-whole', 'link-whole']
 PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 
-TIMEOUT = 10
+TIMEOUT = 5
 
 # SUPPORTED_BROWSERS = Literal['Chrome', 'Edge']
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
