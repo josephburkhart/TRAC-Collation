@@ -299,7 +299,7 @@ class Row:
         value: An integer representing the "value" of this Row, which is located
             in the rightmost column.
         parent_table: The Table object that contains this Row.
-        row_index: A string indicating which row in `parent_table` this Row
+        row_index: An integer indicating which row in `parent_table` this Row
                    corresponds to. Index order is ascending from top to bottom.
         query: A tuple representing the query to use when polling the DOM for
                this row's web element. Example: `(By.CLASS_NAME, 'table-fixed')`
