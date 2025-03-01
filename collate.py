@@ -413,112 +413,211 @@ class Row:
         )
 
 class AxisMenu:
-    """An AxisMenu is a clickable collection of Options.
+    """An AxisMenu is a clickable collection of options.
     
     Args:
         driver: The webdriver object that is accessing the webpage.
         webpage_type: A string representing the type of the webpage.
-        axis_index: An integer indicating which menu on the webpage this 
+        menu_index: An integer indicating which menu on the webpage this 
                     AxisMenu is for (0 = left, 1 = middle, 2 = right).
         wait_time: A float indicating how long to wait for elements to populate.
     """
-    def __init__(self, driver, webpage_type: str, axis_index: int, wait_time):
+    def __init__(self, driver, webpage_type: str, menu_index: int, wait_time):
         # Set instance attributes
         self.driver = driver
         self.webpage_type = webpage_type
+        self.menu_index = menu_index
         self.wait_time = wait_time
+        
+        # Set private instance attributes
+        self._web_element = None
+        self._options = []
+        self._menu_query = None
+        self._option_text_query = None
+        self._option_query = None
 
-        # Calculate menus
-        wait = WebDriverWait(driver, TIMEOUT)
-        #TODO: account for object-broken and link-broken
-        if 'object' in webpage_type:
-            menus = wait.until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, "//button[starts-with(@id, 'headlessui-listbox-button')]")
-                )
+        # Calculate the query to use to find the axis menu web elements
+        if "object" in self.webpage_type:
+            self._menu_query = (
+                By.XPATH, 
+                "//button[starts-with(@id, 'headlessui-listbox-button')]"
             )
-        elif 'link' in webpage_type:
-            menus = wait.until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, "//select[starts-with(@id, 'dimension_pick')]")
-                )
+        elif "link" in self.webpage_type:
+            self._menu_query = (
+                By.XPATH, "//select[starts-with(@id, 'dimension_pick')]"
             )
-        self.clickable_element = menus[axis_index]
 
-        # Calculate options
-        # Note: Chrome and Edge can encounter stale element references when 
-        #       the webpage is of type 'object-whole', so the calculation is 
-        #       wrapped in a while-try-except-else block
-        while True:
+        # Calculate the query to use to find parsable text of all the options
+        if "object" in self.webpage_type:
+            self._option_text_query = (
+                By.XPATH, 
+                "//ul[starts-with(@id, 'headlessui-listbox-options')]"
+            )
+        elif "link" in self.webpage_type:
+            self._option_text_query = self._menu_query
+
+        # Calculate the query to use to find the axis menu option web elements
+        if "object" in self.webpage_type:
+            self._option_query = (
+                By.XPATH, 
+                "//ul[starts-with(@id, 'headlessui-listbox-options')]/*[@role='option']/li/span"
+            )
+        elif "link" in self.webpage_type:
+            self._option_query = (By.XPATH, f".//option")
+        
+        # Calculate all internal data at time of instantiation
+        self.recalculate_web_element()
+        self.recalculate_options()
+
+    @property
+    def web_element(self):
+        """Outermost web element for this AxisMenu, calculated if necessary.
+        
+        This web element is clickable, and when it is clicked the list of
+        options will open.
+        """
+        if self._web_element is None:
+            self.recalculate_web_element()
+        return self._web_element
+    
+    def recalculate_web_element(self, attempt_cap: int=-1):
+        """Erase and re-calculate this AxisMenu's outermost web element.
+        
+        By default, the driver will keep polling the DOM indefinitely until it 
+        finds the correct element. Set `attempt_cap` to a positive value to 
+        limit the number of times the DOM can be polled.
+
+        Modifies:
+            self._web_element
+
+        Raises:
+            NoSuchElementException if this AxisMenu's outermost web element 
+                cannot be not found within the number of allowed attempts.
+        """
+        menu_elements = None
+        attempt_count = 0
+        while (
+            (attempt_count < attempt_cap or attempt_cap < 0) and 
+            (menu_elements is None)
+        ):
             try:
-                self.calculate_options()
-            except StaleElementReferenceException:
-                sleep(wait_time)
+                wait = WebDriverWait(self.driver, TIMEOUT)
+                menu_elements = wait.until(
+                    EC.presence_of_all_elements_located(self._menu_query)
+                )
+            except (TimeoutException, NoSuchElementException) as e:
+                attempt_count += 1
+                if attempt_count == attempt_cap:
+                    raise NoSuchElementException(
+                        f"Could not find outermost web element for {self}."
+                    )
+                sleep(self.wait_time)
+            else:
+                # The number of menu elements does not change, so indexing them
+                # does not raise the risk of an IndexError
+                self._web_element = menu_elements[self.menu_index]
+
+    @property
+    def options(self):
+        """List of MenuOptions for this AxisMenu."""
+        if self._options == []:
+            self.recalculate_options()
+        return self._options
+
+    def recalculate_options(self, attempt_cap: int=-1):
+        """Erase and re-calculate this AxisMenu's options.
+        
+        Because getting the option data requires parsing text from a web 
+        element, it can fail if the web element cannot be found. By default, 
+        if this menu's web element cannot be found, this method will keep 
+        calling self.recalculate_web_element() until it can successfully find 
+        it. Set `attempt_cap` to a positive value to limit the number of times 
+        that self.recalculate_web_element() can be called.
+
+        Modifies:
+            self._options
+        
+        Raises:
+            NoSuchElementException if this menu's outermost web element cannot 
+                be not found within the number of allowed attempts.
+        """
+        self._options = []
+        
+        # To calculate option text, first get text, then filter for meaninful
+        def is_meaningful(text):
+            return text.strip() != ""
+        
+        text_options = None
+        attempt_count = 0
+        while (
+            (attempt_count < attempt_cap or attempt_cap < 0) and
+            (text_options is None)
+        ):
+            try:
+                self.click()
+                wait = WebDriverWait(self.driver, TIMEOUT)
+                text_options_element = wait.until(
+                    EC.presence_of_element_located(self._option_text_query)
+                )
+                text_options = text_options_element.text.split('\n')
+
+            except (StaleElementReferenceException, NoSuchElementException):
+                attempt_count += 1
+                if attempt_count == attempt_cap:
+                    raise NoSuchElementException(
+                        f"Could not find options text web element for {self}."
+                    )
+                sleep(self.wait_time)
+                self.recalculate_web_element()
+            
+            else:
+                text_options = [t.strip() for t in text_options]
+                text_options = [t for t in text_options if is_meaningful(t)]
+        
+        q = self._option_query
+        p = self
+        self._options = [
+            MenuOption(t, i, q, p) for i, t in enumerate(text_options)
+        ]
+
+    def click(self):
+        self._web_element.click()
+
+    def set_to(self, axis_name: str, attempt_cap: int=-1):
+        """Set the axis for this AxisMenu to one of its options.
+        
+        Because this method relies on clicking one or more web elements, it can
+        fail if the web element(s) cannot be found. By default, this method will 
+        keep calling self.recalculate_web_element() and 
+        self.recalculate_options() until it can successfully find the elements
+        it needs. Set `attempt_cap` to a positive value to limit the number of 
+        times that these methods can be called.
+        """
+        attempt_count = 0
+        while (attempt_count < attempt_cap) or attempt_cap < 0:
+            try:
+                self.recalculate_options()
+                filtered = [o for o in self.options if o.name == axis_name]
+                option_to_click = filtered[0]
+                option_to_click.click()
+
+            except (NoSuchElementException, StaleElementReferenceException):
+                attempt_count += 1
+                if attempt_count == attempt_cap:
+                    raise RuntimeError(f"Could not set {self} to {axis_name}.")
+                sleep(self.wait_time)
+            
             else:
                 break
 
-    def calculate_options(self):
-        """
-        Find all of the options in this AxisMenu and store them in self.options.
-        """
-        if 'object' in self.webpage_type:
-            # Listbox is not contained in the clickable element, and options
-            # are inside it. The clickable element must be clicked before
-            # the listbox will appear.
-            # TODO: possible bug on object webpages that causes is an extra
-            #       empty option
-            self.click()
-            wait = WebDriverWait(self.driver, TIMEOUT)
-            listbox_element = wait.until(EC.presence_of_element_located(
-                (By.XPATH, "//ul[starts-with(@id, 'headlessui-listbox-options')]")
-            ))
+    @property
+    def option_names(self):
+        """List of the names of the options for this AxisMenu."""
+        if self._options is None:
+            self.recalculate_options()
+        return [o.name for o in self.options]
 
-            wait = WebDriverWait(listbox_element, TIMEOUT)
-            option_elements = wait.until(
-                EC.presence_of_all_elements_located(
-                    (By.XPATH, ".//*[@role='option']/li/span")
-                )
-            )
-
-        elif 'link' in self.webpage_type:
-            # options are inside the clickable element
-            wait = WebDriverWait(self.clickable_element, TIMEOUT)
-            option_elements = wait.until(EC.presence_of_all_elements_located(
-                    (By.XPATH, f".//option")
-            ))
-        self.options = [Option(e) for e in option_elements]
-
-    def click(self):
-        self.clickable_element.click()
-
-    def set_to(self, axis_name: str):
-        """Set the axis for this AxisMenu to one of its Options."""
-        # For object-based, have to re-calculate options because the references
-        # calculated previously have turned stale
-        # Note: Chrome and Edge can encounter stale element references when 
-        #       the webpage is of type 'object-whole', so the calculation is 
-        #       wrapped in a while-try-except-else block
-        if 'object' in self.webpage_type:
-            while True:
-                try:
-                    self.calculate_options()   # note: this automatically clicks
-                except StaleElementReferenceException:
-                    sleep(self.wait_time)
-                else:
-                    break
-        elif 'link' in self.webpage_type:
-            self.click()                    # opens the menu
-
-        # Select the given option
-        # TODO: is there a better way to do this than list comprehension?
-        option_to_click = [o for o in self.options if o.name == axis_name]
-        try:
-            option_to_click[0].click()
-        except StaleElementReferenceException:
-            self.calculate_options()
-            option_to_click = [o for o in self.options if o.name == axis_name]
-            option_to_click[0].click()
-
+    @staticmethod
     def calculate_all(driver, webpage_type, wait):
         """Calculate all AxisMenus for this webpage."""
         if webpage_type == 'object-whole':
@@ -530,25 +629,114 @@ class AxisMenu:
         elif webpage_type == 'link-broken':
             menus = [AxisMenu(driver, webpage_type, i, wait) for i in range(3)]        #TODO: add proper support for this
         return menus
-    
-    @property
-    def option_names(self):
-        """List of the name of each Option object for this AxisMenu."""
-        return [o.name for o in self.options]
 
-class Option:
-    """An Option is clickable and has a name.
+    def __repr__(self):
+        return f"AxisMenu (i={self.menu_index})"
+
+class MenuOption:
+    """A MenuOption is clickable and has a name.
+
+    As with Rows, MenuOptions are initialized with their name and the data 
+    needed to find their clickable element. They are intended to be used only
+    as data structures that can be clicked. Therefore, no methods are provided 
+    for modifying their data after initialization, and the user should expect 
+    that the one actual method, self.click(), will occasionally throw an
+    IndexError or StaleReferenceElementException. All uses of self.click() must
+    therefore catch these errors.
     
     Args:
-        clickable_web_element: The clickable web element for this Option.
+        name: A string representing the name of this option.
+        option_index: An integer representing the  position of this option in 
+            the overall option list.
+        query: A tuple representing the query to use when polling the DOM for
+               this option's web element. Example: 
+               `(By.CLASS_NAME, 'table-fixed')`.
+        parent_menu: The AxisMenu to which this option belongs.
     """
-    def __init__(self, clickable_web_element):
-        self.clickable_element = clickable_web_element
-        self.name = clickable_web_element.text  #TODO: StaleElementReferenceException can get thrown here
+    def __init__(self, name, option_index, query, parent_menu):
+        self.name = name
+        self.option_index = option_index
+        self._query = query
+        self._parent_menu = parent_menu
     
-    def click(self):
-        self.clickable_element.click()
+    def click(self, attempt_cap: int=-1):
+        """Find the clickable element for this option and click it.        
+        
+        This method calculates the clickable web element on the fly, ensuring
+        that references to elements are never stored.
+        
+        By default, the driver will keep polling the DOM indefinitely until it 
+        finds the correct web element. Set `fail_cap` to a positive value to 
+        limit the number of times the DOM can be polled.
 
+        Raises:
+            NoSuchElementException if this option's outermost web element or
+                clickable web element cannot be not found within the number of
+                allowed attempts.
+            IndexError if the index of this option at time of initialization 
+                exceeds the number of outermost web elements found in the DOM.
+        """
+        # First find the option's clickable web element, using a strategy that
+        # varies depending on the webpage type.
+        attempt_count = 0
+        clickable_web_element = None
+        while (
+            (attempt_count < attempt_cap or attempt_cap < 0) and 
+            (clickable_web_element is None)
+        ):
+            
+            # In "object" webpages, Listbox is not contained in the clickable 
+            # element, and options are inside it. The clickable element must be 
+            # clicked before the listbox will appear.
+            if "object" in self._parent_menu.webpage_type:
+                try:
+                    # self._parent_menu.click()
+                    wait = WebDriverWait(self._parent_menu.driver, TIMEOUT)
+                    elements = wait.until(
+                        EC.presence_of_all_elements_located(self._query)
+                    )
+                except (TimeoutException, NoSuchElementException) as e:
+                    attempt_count += 1
+                    if attempt_count == attempt_cap:
+                        raise NoSuchElementException(
+                            f"Could not find outermost web element for {self}."
+                        )
+                    sleep(self._parent_menu.wait_time)
+
+                else:
+                    # Can raise IndexError
+                    elements = [e for e in elements if e.text.strip() != ""]
+                    clickable_web_element = elements[self.option_index]
+                    break
+
+            # In "link" webpages, options are inside the clickable element
+            elif "link" in self._parent_menu.webpage_type:
+                try:
+                    wait = WebDriverWait(self._parent_menu.web_element, TIMEOUT)
+                    elements = wait.until(
+                        EC.presence_of_all_elements_located(self._query)
+                    )
+                except (TimeoutException, NoSuchElementException) as e:
+                    attempt_count += 1
+                    if attempt_count == attempt_cap:
+                        raise NoSuchElementException(
+                            f"Could not find outermost web element for {self}."
+                        )
+                    sleep(self._parent_menu.wait_time)
+
+                else:
+                    # Can raise IndexError
+                    clickable_web_element = elements[self.option_index]
+                    break
+
+        # Now that we have the clickable web element, click it
+        clickable_web_element.click()
+
+    def __repr__(self):
+        return (
+            f"MenuOption (axis={self._parent_menu.menu_index}, "
+            f"i={self.option_index}, name={self.name})"
+        )
 
 class CollationEngine():
     """A CollationEngine coordinates the other classes in collating the webpage.
