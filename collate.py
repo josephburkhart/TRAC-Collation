@@ -1059,21 +1059,40 @@ class CollationEngine():
                     )
                 
                 # Refresh table 2 rows
-                sleep(self.wait_time)
                 table_2.recalculate_rows()
 
                 # Ensure that table 2 rows add up to the total expected from the
                 # value of the current table 1 row
                 t2_total_expected = t1_row.value
-                attempt_cap_1 = 1000
+                attempt_cap_1 = 2000
                 attempt_count_1 = 0
-                while (t2_total_expected != sum([r.value for r in table_2.rows])) and (attempt_count_1 < attempt_cap_1):
-                    sleep(self.wait_time)
-                    table_2.recalculate_rows()
+                while (
+                    (t2_total_expected != sum([r.value for r in table_2.rows])) and 
+                    (attempt_count_1 < attempt_cap_1)
+                ):
                     attempt_count_1 += 1
+
                     if attempt_count_1 == attempt_cap_1:
+                        # This seems to never happen
                         raise RuntimeError("Could not make Table 2 total expected equal Table 2 total actual")
+
+                    table_2.recalculate_rows()
                     
+                    # Every 500 attempts, try clicking away and then back
+                    if (attempt_count_1+1) % 500 == 0:
+                        away_index = i-1 if i > 0 else 1
+                        table_1.rows[away_index].click()
+                        sleep(TIMEOUT)
+                        table_1.rows[i].click()
+                        sleep(TIMEOUT)
+
+                    # Every 100 attempts, try a longer sleep
+                    elif (attempt_count_1+1) % 100 == 0:
+                        sleep(TIMEOUT) 
+
+                    else:
+                        sleep(self.wait_time)
+
                 # Iterate over table 2 rows
                 t2_total_actual = 0
                 while t2_total_expected != t2_total_actual:
@@ -1087,7 +1106,7 @@ class CollationEngine():
                         # Attempt to click current table 2 row
                         try:
                             t2_row.click()
-                        except NoSuchElementException:
+                        except (NoSuchElementException, StaleElementReferenceException):
                             table_2.recalculate_rows()
                             t2_row = table_2.rows[j]
                             t2_row.click()
@@ -1098,21 +1117,40 @@ class CollationEngine():
                             )
                         
                         # Refresh table 3 rows
-                        sleep(self.wait_time)
                         table_3.recalculate_rows()
 
                         # Ensure that table 3 rows add up to the total expected 
                         # from the value of the current table 2 row
                         t3_total_expected = t2_row.value
-                        attempt_cap_2 = 1000
+                        attempt_cap_2 = 2000
                         attempt_count_2 = 0
-                        while (t3_total_expected != sum([r.value for r in table_3.rows])) and (attempt_count_2 < attempt_cap_2):
-                            sleep(self.wait_time)
-                            table_3.recalculate_rows()
+                        while (
+                            (t3_total_expected != sum([r.value for r in table_3.rows])) and 
+                            (attempt_count_2 < attempt_cap_2)
+                        ):
                             attempt_count_2 += 1
+
                             if attempt_count_2 == attempt_cap_2:
+                                # This seems to occasionally happen
                                 raise RuntimeError("Could not make Table 3 total expected equal Table 3 total actual")
 
+                            table_3.recalculate_rows()
+
+                            # Every 500 attempts, try clicking away and then back
+                            if (attempt_count_2+1) % 500 == 0:
+                                away_index = j-1 if j > 0 else 1
+                                table_2.rows[away_index].click()
+                                sleep(TIMEOUT)
+                                table_2.rows[j].click()
+                                sleep(TIMEOUT)
+
+                            # Every 100 attempts, try a longer sleep
+                            elif (attempt_count_2+1) % 100 == 0:
+                                sleep(TIMEOUT) 
+                            
+                            else:
+                                sleep(self.wait_time)
+                            
                         # Copy rows from table 3 into the data dictionary
                         t3_rows = table_3.text_rows
                         t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
@@ -1276,7 +1314,6 @@ if __name__ == '__main__':
         sys.exit()
 
     # Otherwise, run with the parameters from the command line
-    #TODO: add validation for inputs
     user_opts = [a for a in sys.argv[1:] if "--" in a or "-" in a]
     user_args = [a for a in sys.argv[1:] if "--" not in a or "-" not in a]
 
