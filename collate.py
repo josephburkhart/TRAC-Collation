@@ -947,16 +947,16 @@ class CollationEngine():
             for i in list(range(len(table_1.text_rows))):
                 try:
                     table_1.rows[i].click()
-                except NoSuchElementException:
+                except (StaleElementReferenceException, NoSuchElementException):
                     table_1.recalculate_rows()
                     sleep(self.wait_time)
                     table_1.rows[i].click()
-                except IndexError:
-                    row = table_1.rows[i]
+                except IndexError:          # TODO: how can we handle this more gracefully?
                     raise RuntimeError(
                         f"IndexError encountered at {table_1}, row {i}."
                     )
                 else:
+                    table_2.recalculate_rows()
                     total_n_possible_t2 += len(table_2.rows)
             
             avg_n_possible_t2.append(total_n_possible_t2/len(table_1.rows))
@@ -1049,7 +1049,7 @@ class CollationEngine():
                 # Attempt to click current table 1 row
                 try:
                     t1_row.click()
-                except NoSuchElementException:
+                except (NoSuchElementException, StaleElementReferenceException):
                     table_1.recalculate_rows()
                     t1_row = table_1.rows[i]
                     t1_row.click()
