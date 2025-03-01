@@ -120,18 +120,18 @@ class Table:
         self.table_type = table_type
         self.wait_time = wait_time
 
-        # Set private/container instance attributes
+        # Set private instance attributes
         self._web_element = None
         self._text_rows = []
         self._rows = []
 
-        # Set instance table query attribute based on the table type
+        # Set instance's table query attribute based on the table type
         if table_type == 'object':
             self.table_query = (By.CLASS_NAME, 'table-fixed')
         elif table_type == 'link':
             self.table_query = (By.CLASS_NAME, 'Table')
 
-        # Set instance row query attribute based on the table type
+        # Set instance's row query attribute based on the table type
         if self.table_type == 'object':
             self.row_query = (By.CLASS_NAME, 'flex-row')
         elif self.table_type == 'link':
