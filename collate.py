@@ -831,7 +831,7 @@ class CollationEngine():
         for m in self.menus:
             for a in self.axes:
                 if a not in m.option_names:
-                    raise ValueError(f"Axis name '{a}' could not be found.")
+                    raise ValueError(f"Axis name '{a}' could not be found. Options are {m.option_names}")
 
         # Set Axes
         if self.optimize:
@@ -954,7 +954,7 @@ class CollationEngine():
                 except IndexError:
                     row = table_1.rows[i]
                     raise RuntimeError(
-                        f"IndexError encountered for {table_1}, {row}."
+                        f"IndexError encountered at {table_1}, row {i}."
                     )
                 else:
                     total_n_possible_t2 += len(table_2.rows)
