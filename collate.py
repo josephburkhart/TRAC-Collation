@@ -60,8 +60,8 @@ USAGE = (
 )
 
 WEBPAGE_TYPES = {
-    'https://tracreports.org/phptools/immigration/ntanew/': 'object-broken',
-    'https://tracreports.org/phptools/immigration/closure/': 'object-broken',
+    'https://tracreports.org/phptools/immigration/ntanew/': 'object-broken-1',
+    'https://tracreports.org/phptools/immigration/closure/': 'object-broken-1',
     'https://tracreports.org/phptools/immigration/asyfile/': 'object-whole',
     'https://tracreports.org/phptools/immigration/asylum/': 'object-whole',
     'https://tracreports.org/phptools/immigration/mpp4/': 'link-whole',
@@ -74,10 +74,10 @@ WEBPAGE_TYPES = {
     'https://tracreports.org/phptools/immigration/remove/': 'link-whole',
     'https://tracreports.org/phptools/immigration/removehistory/': 'link-whole',
     'https://tracreports.org/phptools/immigration/secure/': 'link-whole',
-    'https://tracreports.org/phptools/immigration/backlog/': 'object-broken',
+    'https://tracreports.org/phptools/immigration/backlog/': 'object-broken-2',
     'https://tracreports.org/phptools/immigration/addressrep/': 'map-table',
     'https://tracreports.org/immigration/reports/judgereports/': 'table-only-1',
-    'https://tracreports.org/phptools/immigration/asylumbl/': 'object-broken',
+    'https://tracreports.org/phptools/immigration/asylumbl/': 'object-broken-2',
     'https://tracreports.org/phptools/immigration/bond/': 'table-tab',
     'https://tracreports.org/phptools/immigration/detention/': 'link-broken',
     'https://tracreports.org/immigration/detentionstats/facilities.html': 'table-only-2',
