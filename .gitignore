@@ -6,3 +6,4 @@ control/*
 __pycache__
 .pytest_cache
 everything.py
+everything-*/*
