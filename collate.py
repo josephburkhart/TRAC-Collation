@@ -940,6 +940,19 @@ class CollationEngine():
         The second/middle axis will be the one which has the smallest average
         number of possible values in table 2 across all possible values in table
         1. The third/rightmost axis will be the only axis remaining.
+
+        Calculating the second axis involves a partial traversal of the dataset,
+        so the same waiting strategy in create_dataset() is employed here, with
+        one optimization: when the number of rows in table 2 falls below 5, it
+        is assumed that any remaining table 1 row also has 4 or fewer
+        corresponding table 2 rows. This takes advantage of the default value
+        descending sort order of tables, and prevents us from slowdowns
+        incurred when table 1 has many rows with very small numbers of
+        corresponding table 2 rows. For an example, see the 'secure' dataset,
+        Table 1 is 'County', Table 2 is 'County-Facility Detainer Sent'. This
+        does mean that the choice for table 2 might not always be the actual
+        best, but it should almost always be right and when it's not, it should
+        be close enough to not make a significant difference.
         
         Modifies:
             self.axes_order
@@ -960,10 +973,13 @@ class CollationEngine():
         axis_1_index = n_possible_t1.index(min(n_possible_t1))
         axis_1 = input_axes.pop(axis_1_index)
         
-        # Determine second axis
         self.menus[0].set_to(axis_1)
         sleep(self.wait_time)
 
+        # Set third axis to the same as first axis to speed up table population
+        self.menus[2].set_to(axis_1)
+
+        # Determine second axis
         avg_n_possible_t2 = []
         for a in input_axes:
             self.menus[1].set_to(a)
@@ -972,21 +988,78 @@ class CollationEngine():
             table_2 = Table(self.driver, 1, self.table_type, self.wait_time)
 
             total_n_possible_t2 = 0
+
+            # Iterate over table 1 rows
             for i in list(range(len(table_1.text_rows))):
+                t1_row = table_1.rows[i]
+                
+                # Attempt to click the table 1 row
                 try:
                     table_1.rows[i].click()
                 except (StaleElementReferenceException, NoSuchElementException):
                     table_1.recalculate_rows()
-                    sleep(self.wait_time)
-                    table_1.rows[i].click()
-                except IndexError:          # TODO: how can we handle this more gracefully?
+                    t1_row = table_1.rows[i]
+                    t1_row.click()
+                except IndexError:
                     raise RuntimeError(
-                        f"IndexError encountered at {table_1}, row {i}."
+                        f"IndexError encountered during axes optimization at "
+                        f"{table_1}, row {i}."
                     )
-                else:
+                
+                # Refresh table 2 rows
+                sleep(self.wait_time)
+                table_2.recalculate_rows()
+
+                # Ensure that table 2 rows add up properly
+                attempt_cap = 1000
+                attempt_count = 0
+                while (
+                    (t1_row.value != sum([r.value for r in table_2.rows])) and 
+                    (attempt_count < attempt_cap)
+                ):
+                    # Check for that edge case where #1 = #3, but #3 != #2
+                    # Don't bother to print a message. Doing so in
+                    # create_dataset() is enough.
+                    if (
+                        (t1_row.value == table_2.total_row_value) and
+                        (table_2.total_row_value != sum([r.value for r in table_2.rows]))
+                    ):
+                        break
+
+                    # Increment the counter and error out if cap is reached
+                    attempt_count += 1
+                    if attempt_count == attempt_cap:
+                        raise RuntimeError(
+                            f"Could not make Table 2 total expected equal "
+                            f"Table 2 total actual"
+                        )
+
                     table_2.recalculate_rows()
-                    total_n_possible_t2 += len(table_2.rows)
+
+                    # Every so often, try a longer sleep
+                    if (attempt_count+1) % 100 == 0:
+                        sleep(WAIT_TIME_LONG) 
+
+                    # More rarely, try even longer sleep and recalculate
+                    # the expected value
+                    if (attempt_count+1) % 300 == 0:
+                        sleep(TIMEOUT)
+                        table_1.recalculate_rows()
+                        t1_row = table_1.rows[i]
+
+                    else:
+                        sleep(self.wait_time)
             
+                # Check if table 2 has 4 or fewer rows. If so, assume that the
+                # remaining table 1 rows have an average of 3 table 2 rows each
+                if len(table_2.rows) < 5:
+                    total_n_possible_t2 += 3 * (len(table_1.rows) - (i + 1))
+                    break
+
+                # Otherwise, continue as usual
+                else:
+                    total_n_possible_t2 += len(table_2.rows)
+
             avg_n_possible_t2.append(total_n_possible_t2/len(table_1.rows))
             
         axis_2_index = avg_n_possible_t2.index(min(avg_n_possible_t2))
