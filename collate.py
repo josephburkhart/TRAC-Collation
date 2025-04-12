@@ -1069,7 +1069,7 @@ class CollationEngine():
         axis_3 = input_axes[0]
                    
         # Calculate the optimized order
-        self.axes_order = [self.axes.index(a) for a in [axis_1, axis_2, axis_3]]
+        self.axes_order = [self.axes_names.index(a) for a in [axis_1, axis_2, axis_3]]
 
     @staticmethod
     def get_driver(browser: SUPPORTED_BROWSERS, headless):
