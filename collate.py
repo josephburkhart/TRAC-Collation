@@ -1150,11 +1150,26 @@ class CollationEngine():
         table_1.recalculate_rows()
         sleep(self.wait_time)
 
-        # Iterate over table 1 rows
-        t1_total_expected = sum([r.value for r in table_1.rows])
-        t1_total_actual = 0
-        while t1_total_expected != t1_total_actual:
-            t1_total_actual = 0
+        # Iterate over table 2 rows. As with the table 2 population 
+        # check, there are multiple values to keep track of:
+        # 1. The cumulative sum of data from table 3
+        # 2. The sum of the data values of table 2
+        # 3. The total value indicated at the top of table 2
+        # 4. The sum of the total rows of table 3
+        t1_rows_sum = sum([r.value for r in table_1.rows])
+        t1_data_cumulative_sum = 0
+        t1_totals_cumulative_sum = 0
+        while (
+            (t1_data_cumulative_sum == 0) or
+            (
+                (t1_data_cumulative_sum != t1_rows_sum) and
+                (t1_data_cumulative_sum != table_1.total_row_value) and
+                (t1_rows_sum == table_1.total_row_value) and
+                (t1_data_cumulative_sum == t1_totals_cumulative_sum)
+            )
+        ):
+            t1_data_cumulative_sum = 0
+            t1_totals_cumulative_sum = 0
 
             pbar1 = tqdm(range(len(table_1.rows)), leave=False, bar_format=pbar_format)
             for i in pbar1:
@@ -1172,14 +1187,16 @@ class CollationEngine():
                     t1_row.click()
                 except IndexError:
                     raise RuntimeError(
-                        f"IndexError encountered for {table_1}, {t1_row}."
+                        f"IndexError encountered during dataset creation for "
+                        f"{table_1}, {t1_row}."
                     )
                 
                 # Refresh table 2 rows
                 sleep(self.wait_time)
                 table_2.recalculate_rows()
 
-                # Ensure that table 2 rows add up properly
+                # Ensure that table 2 rows add up properly to ensure that they
+                # are fully populated before starting to iterate over them
                 
                 # There are three values to consider here:
                 # 1. The value of the current table 1 row
@@ -1205,7 +1222,8 @@ class CollationEngine():
                         (table_2.total_row_value != sum([r.value for r in table_2.rows]))
                     ):
                         print(
-                            f"For Table 1 row {t1_row._row_index} ({t1_row.name}), "
+                            f"For axes {", ".join([self.axes_names[i] for i in self.axes_order])}, "
+                            f"Table 1 row {t1_row._row_index} ({t1_row.name}), "
                             f"Table 2 total/top row value "
                             f"{table_2.total_row_value} does not match actual "
                             f"Table 2 total "
@@ -1236,11 +1254,26 @@ class CollationEngine():
                     else:
                         sleep(self.wait_time)
 
-                # Iterate over table 2 rows
-                t2_total_expected = sum([r.value for r in table_2.rows])
-                t2_total_actual = 0
-                while t2_total_expected != t2_total_actual:
-                    t2_total_actual = 0
+                # Iterate over table 2 rows. As with the table 2 population 
+                # check, there are multiple values to keep track of:
+                # 1. The cumulative sum of data from table 3
+                # 2. The sum of the data values of table 2
+                # 3. The total value indicated at the top of table 2
+                # 4. The sum of the total rows of table 3
+                t2_rows_sum = sum([r.value for r in table_2.rows])
+                t2_data_cumulative_sum = 0
+                t2_totals_cumulative_sum = 0
+                while (
+                    (t2_data_cumulative_sum == 0) or
+                    (
+                        (t2_data_cumulative_sum != t2_rows_sum) and
+                        (t2_data_cumulative_sum != table_2.total_row_value) and
+                        (t2_rows_sum == table_2.total_row_value) and
+                        (t2_data_cumulative_sum == t2_totals_cumulative_sum)
+                    )
+                ):
+                    t2_data_cumulative_sum = 0
+                    t2_totals_cumulative_sum = 0
 
                     pbar2 = tqdm(range(len(table_2.rows)), leave=False, bar_format=pbar_format)
                     for j in pbar2:
@@ -1256,7 +1289,8 @@ class CollationEngine():
                             t2_row.click()
                         except IndexError:
                             raise RuntimeError(
-                                f"IndexError encountered for {table_1}, "
+                                f"IndexError encountered during dataset "
+                                f"creation for {table_1}, "
                                 f"{t1_row}, {table_2}, {t2_row}."
                             )
                         
@@ -1264,8 +1298,9 @@ class CollationEngine():
                         sleep(self.wait_time)
                         table_3.recalculate_rows()
 
-                        # Ensure that table 3 rows add up properly
-                        # See table 2 total check for an explanation
+                        # Ensure that table 3 rows add up properly to ensure
+                        # they are fully populated before starting to iterate
+                        # over them (see table 2 total check for an explanation)
                         attempt_cap_2 = 1000
                         attempt_count_2 = 0
                         while (
@@ -1278,7 +1313,8 @@ class CollationEngine():
                                 (table_3.total_row_value != sum([r.value for r in table_3.rows]))
                             ):
                                 print(
-                                    f"For Table 1 row {t1_row._row_index} ({t1_row.name}), "
+                                    f"For axes {", ".join([self.axes_names[i] for i in self.axes_order])}, "
+                                    f"Table 1 row {t1_row._row_index} ({t1_row.name}), "
                                     f"Table 2 row {t2_row._row_index} ({t2_row.name}), "
                                     f"Table 3 total/top row value "
                                     f"{table_3.total_row_value} does not match actual "
@@ -1317,12 +1353,14 @@ class CollationEngine():
                         data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
 
                         # Keep table 2 tally for sanity check
-                        # Note that we're using the table 3 total row value
-                        # because sometimes the values of table 3 will never add
-                        # up to the row values in table 2
-                        t2_total_actual += table_3.total_row_value
-                
-                t1_total_actual += t2_total_actual
+                        # Note that we're also tracking the table 3 total row
+                        # values because sometimes the values of table 3 will
+                        # never add up to the row values in table 2
+                        t2_data_cumulative_sum += sum(data[t1_row.name][t2_row.name].values())
+                        t2_totals_cumulative_sum += table_3.total_row_value
+
+                t1_data_cumulative_sum += t2_data_cumulative_sum
+                t1_totals_cumulative_sum += table_2.total_row_value
         
         # Save data as attribute and convert to dataframe
         self.data = data
