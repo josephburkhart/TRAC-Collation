@@ -816,7 +816,7 @@ class CollationEngine():
         self.browser = browser
         self.driver = CollationEngine.get_driver(browser, headless)
         self.filename = filename
-        self.axes = axes
+        self.axes_names = axes
         self.tables = [None, None, None]
         self.optimize = optimize
         self.hdf_key = hdf_key
@@ -857,7 +857,7 @@ class CollationEngine():
         #       will not always be the case if support is added for more webpage
         #       types, so all menus will be checked
         for m in self.menus:
-            for a in self.axes:
+            for a in self.axes_names:
                 if a not in m.option_names:
                     raise ValueError(f"Axis name '{a}' could not be found. Options are {m.option_names}")
 
@@ -868,7 +868,7 @@ class CollationEngine():
             print(f"Reordering axes to {self.axes_order} for better performance... ", end="")
 
         for i, o in enumerate(self.axes_order):
-            self.menus[i].set_to(self.axes[o])
+            self.menus[i].set_to(self.axes_names[o])
 
         print("Done.")
 
@@ -947,7 +947,7 @@ class CollationEngine():
         Raises:
             RuntimeError if there's an issue with clicking a row.
         """
-        input_axes = list(copy(self.axes))
+        input_axes = list(copy(self.axes_names))
 
         # Determine first axis
         n_possible_t1 = []
@@ -1295,11 +1295,11 @@ class CollationEngine():
             self.df[col] = self.df[col].astype('int64')
 
         # Rename indices to reflect axis names
-        for i, a in enumerate(self.axes[:-1]):
+        for i, a in enumerate(self.axes_names[:-1]):
             self.df.index.rename(names=a, level=i, inplace=True)
         
         # Rename columns with the final axis
-        self.df = self.df.rename_axis(columns=self.axes[-1])
+        self.df = self.df.rename_axis(columns=self.axes_names[-1])
             
     def save_dataset(self, append, key):
         """Save the collated dataset as an HDF file."""
@@ -1325,19 +1325,19 @@ class CollationEngine():
                 f"{self.filename}."
             )
     
-    def set_axes(self, axis_names, verbose=False, optimize=False):
+    def set_axes(self, axes_names, verbose=False, optimize=False):
         """Set the axes to specified names."""
         if verbose:
-            print(f"Setting axes to {axis_names}... ", end="")
+            print(f"Setting axes to {axes_names}... ", end="")
 
-        self.axes = axis_names
-        self.axes_order = list(range(len(axis_names)))
+        self.axes_names = axes_names
+        self.axes_order = list(range(len(axes_names)))
 
         if optimize:
             self.optimize_axes()
 
         for i, o in enumerate(self.axes_order):
-            self.menus[i].set_to(self.axes[o])
+            self.menus[i].set_to(self.axes_names[o])
 
     def recalculate_tables(self):
         if self.webpage_type in ('object-whole', 'object-broken'):
