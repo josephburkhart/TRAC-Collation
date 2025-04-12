@@ -20,7 +20,7 @@ import pandas as pd
 from time import sleep
 from tqdm import tqdm
 import json
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException, NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException, NoSuchElementException, NoSuchDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -87,12 +87,11 @@ WEBPAGE_TYPES = {
 FULLY_SUPPORTED_TYPES = ['object-whole', 'link-whole']
 PARTIALLY_SUPPORTED_TYPES = ['object-broken', 'link-broken']
 
-TIMEOUT = 5
-
-# SUPPORTED_BROWSERS = Literal['Chrome', 'Edge']
 SUPPORTED_BROWSERS = Literal['Firefox', 'Chrome', 'Edge', 'Safari']
 
-WAIT_TIME_FOR_POPULATION = 0.1
+WAIT_TIME_SHORT = 0.1
+WAIT_TIME_LONG = 1
+TIMEOUT = 10
 
 # STALE_REFERENCE_MAX_ATTEMPTS = 1000
 
@@ -124,6 +123,7 @@ class Table:
         self._web_element = None
         self._text_rows = []
         self._rows = []
+        self._total_row_value = 0
 
         # Set instance's table query attribute based on the table type
         if table_type == 'object':
@@ -159,6 +159,19 @@ class Table:
             self.recalculate_rows()
         return self._rows
     
+    @property
+    def total_row_value(self):
+        """The value of the total row - i.e., the top row.
+        
+        The top row of the table claims to display the sum of all the rows below
+        it. This is actually not always true, but the value of this row is 
+        still useful because it can be compared to the value of the current row
+        of the previous table to see if this table has populated correctly.
+        
+        This row is indicated by the name 'Total', or 'All', or similar.
+        """
+        return self._total_row_value
+
     def recalculate_rows(self, attempt_cap: int=-1):
         """Erase and re-calculate all internal data about rows.
 
@@ -236,6 +249,20 @@ class Table:
             self._rows.append(
                 Row(name, value, self, row_indices[i], self.row_query)
             )
+
+        # Calculate value of the total row - i.e., the value of the top row that
+        # claims to display the sum of all the rows below it. This row is
+        # indicated by the name 'Total', or 'All', or similar.
+        def is_total(txt):
+            name, _, value = txt.rpartition(" ")
+            return (
+                (name.strip() == "All") or
+                (bool(re.fullmatch(r"All-.*", name)))
+            )
+        total_row_values = [r for r in text_rows if is_total(r)]
+        self._total_row_value = int(
+            total_row_values[0].rpartition(" ")[2].replace(",","")
+        )
 
     @property
     def web_element(self):
@@ -802,7 +829,7 @@ class CollationEngine():
             self.driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": [f"{url}graph.php"]})
             self.driver.execute_cdp_cmd("Network.enable", {})
 
-        self.wait_time = WAIT_TIME_FOR_POPULATION
+        self.wait_time = WAIT_TIME_SHORT
 
         # Determine webpage type
         self.webpage_type = WEBPAGE_TYPES[url]
@@ -1062,37 +1089,65 @@ class CollationEngine():
                 sleep(self.wait_time)
                 table_2.recalculate_rows()
 
-                # Ensure that table 2 rows add up to the total expected from the
-                # value of the current table 1 row
-                t2_total_expected = t1_row.value
-                attempt_cap_1 = 2000
+                # Ensure that table 2 rows add up properly
+                
+                # There are three values to consider here:
+                # 1. The value of the current table 1 row
+                # 2. The sum of all the current table 2 rows
+                # 3. The total value indicated at the top of table 2
+
+                # Ideally, we would just check that #1 and #2 are identical, and
+                # if they weren't then that would mean that table 2 had not
+                # populated yet. Unfortunately, sometimes #2 never equals #1.
+                
+                # In these cases, it can happen that #3 is equal to #1, and not
+                # equal to #2. This is a bug on the TRAC side. In such cases,
+                # we continue onward as if table 2 were correct. [JB 4/12/2025] 
+                attempt_cap_1 = 1000
                 attempt_count_1 = 0
                 while (
-                    (t2_total_expected != sum([r.value for r in table_2.rows])) and 
+                    (t1_row.value != sum([r.value for r in table_2.rows])) and 
                     (attempt_count_1 < attempt_cap_1)
                 ):
-                    attempt_count_1 += 1
+                    # Check for that edge case where #1 = #3, but #3 != #2
+                    if (
+                        (t1_row.value == table_2.total_row_value) and
+                        (table_2.total_row_value != sum([r.value for r in table_2.rows]))
+                    ):
+                        print(
+                            f"For Table 1 row {t1_row._row_index} ({t1_row.name}), "
+                            f"Table 2 total/top row value "
+                            f"{table_2.total_row_value} does not match actual "
+                            f"Table 2 total "
+                            f"({sum([r.value for r in table_2.rows])}). "
+                            f"Continuing anyway..."
+                        )
+                        break
 
+                    # Increment the counter and error out if cap is reached
+                    attempt_count_1 += 1
                     if attempt_count_1 == attempt_cap_1:
                         # This seems to never happen
                         raise RuntimeError("Could not make Table 2 total expected equal Table 2 total actual")
 
                     table_2.recalculate_rows()
 
-                    # Every 500 attempts, try a longer sleep
-                    if (attempt_count_1+1) % 500 == 0:
-                        sleep(TIMEOUT) 
+                    # Every so often, try a longer sleep
+                    if (attempt_count_1+1) % 100 == 0:
+                        sleep(WAIT_TIME_LONG) 
 
-                    # Every 1000 attempts, try recalculating the expected value
-                    if (attempt_count_1+1) % 1000 == 0:
+                    # More rarely, try even longer sleep and recalculate
+                    # the expected value
+                    if (attempt_count_1+1) % 300 == 0:
+                        sleep(TIMEOUT)
                         table_1.recalculate_rows()
                         t1_row = table_1.rows[i]
-                        t2_total_expected = t1_row.value
 
                     else:
                         sleep(self.wait_time)
 
                 # Iterate over table 2 rows
+                t2_total_expected = sum([r.value for r in table_2.rows])
                 t2_total_actual = 0
                 while t2_total_expected != t2_total_actual:
                     t2_total_actual = 0
@@ -1119,32 +1174,48 @@ class CollationEngine():
                         sleep(self.wait_time)
                         table_3.recalculate_rows()
 
-                        # Ensure that table 3 rows add up to the total expected 
-                        # from the value of the current table 2 row
-                        t3_total_expected = t2_row.value
-                        attempt_cap_2 = 2000
+                        # Ensure that table 3 rows add up properly
+                        # See table 2 total check for an explanation
+                        attempt_cap_2 = 1000
                         attempt_count_2 = 0
                         while (
-                            (t3_total_expected != sum([r.value for r in table_3.rows])) and 
+                            (t2_row.value != sum([r.value for r in table_3.rows])) and 
                             (attempt_count_2 < attempt_cap_2)
                         ):
-                            attempt_count_2 += 1
+                            # Check for that edge case where #1 = #3, but #3 != #2
+                            if (
+                                (t2_row.value == table_3.total_row_value) and
+                                (table_3.total_row_value != sum([r.value for r in table_3.rows]))
+                            ):
+                                print(
+                                    f"For Table 1 row {t1_row._row_index} ({t1_row.name}), "
+                                    f"Table 2 row {t2_row._row_index} ({t2_row.name}), "
+                                    f"Table 3 total/top row value "
+                                    f"{table_3.total_row_value} does not match actual "
+                                    f"Table 3 total "
+                                    f"({sum([r.value for r in table_3.rows])}). "
+                                    f"Continuing anyway..."
+                                )
+                                break
 
+                            # Increment the counter and error out if cap is reached
+                            attempt_count_2 += 1
                             if attempt_count_2 == attempt_cap_2:
                                 # This seems to occasionally happen
                                 raise RuntimeError("Could not make Table 3 total expected equal Table 3 total actual")
 
                             table_3.recalculate_rows()
 
-                            # Every 500 attempts, try a longer sleep
-                            if (attempt_count_2+1) % 500 == 0:
-                                sleep(TIMEOUT)
+                            # Every so often, try a longer sleep
+                            if (attempt_count_2+1) % 100 == 0:
+                                sleep(WAIT_TIME_LONG)
                             
-                            # Every 1000 attempts, try recalculating the expected value
-                            if (attempt_count_2+1) % 1000 == 0:
+                            # More rarely, try even longer sleep and recalculate
+                            # the expected value
+                            if (attempt_count_2+1) % 300 == 0:
+                                sleep(TIMEOUT)
                                 table_2.recalculate_rows()
                                 t2_row = table_2.rows[j]
-                                t3_total_expected = t2_row.value
                             
                             else:
                                 sleep(self.wait_time)
@@ -1155,8 +1226,11 @@ class CollationEngine():
                         t3_rows = [[r[0], int(r[1].replace(',', ''))] for r in t3_rows]
                         data[t1_row.name][t2_row.name] = {r[0]: r[1] for r in t3_rows}
 
-                        # Keep t2 tally for sanity check
-                        t2_total_actual += sum(data[t1_row.name][t2_row.name].values())
+                        # Keep table 2 tally for sanity check
+                        # Note that we're using the table 3 total row value
+                        # because sometimes the values of table 3 will never add
+                        # up to the row values in table 2
+                        t2_total_actual += table_3.total_row_value
                 
                 t1_total_actual += t2_total_actual
         
@@ -1282,7 +1356,7 @@ class CollationEngine():
         driver = CollationEngine.get_driver(browser, headless)
         driver.get(url)
         webpage_type = WEBPAGE_TYPES[url]
-        menu = AxisMenu(driver, webpage_type, 0, WAIT_TIME_FOR_POPULATION)
+        menu = AxisMenu(driver, webpage_type, 0, WAIT_TIME_SHORT)
 
         options = menu.option_names
 
