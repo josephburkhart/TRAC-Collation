@@ -1001,38 +1001,54 @@ class CollationEngine():
     def get_driver(browser: SUPPORTED_BROWSERS, headless):
         """Import necessary classes and return webdriver for the chosen browser."""
         if browser == 'Firefox':
-            from selenium.webdriver import Firefox                  
+            from selenium.webdriver import Firefox, FirefoxService                
             from selenium.webdriver.firefox.options import Options
             options = Options()
             if headless:
                 options.add_argument('--headless')
-            return Firefox(options=options)
+            try:
+                return Firefox(options=options)
+            except NoSuchDriverException:
+                service = FirefoxService(str(Path.cwd() / "geckodriver.exe"))
+                return Firefox(options=options, service=service)
         
         elif browser == 'Chrome':
-            from selenium.webdriver import Chrome
+            from selenium.webdriver import Chrome, ChromeService
             from selenium.webdriver.chrome.options import Options
             options = Options()
             options.add_argument("--log-level=3")
             options.add_experimental_option("excludeSwitches", ["enable-logging"])
             if headless:
                 options.add_argument('--headless')
-            return Chrome(options=options)
+            try:
+                return Chrome(options=options)
+            except NoSuchDriverException:
+                service = ChromeService(str(Path.cwd() / "chromedriver.exe"))
+                return Chrome(options=options, service=service)
         
         elif browser == 'Edge':
-            from selenium.webdriver import Edge
+            from selenium.webdriver import Edge, EdgeService
             from selenium.webdriver.edge.options import Options
             options = Options()
             if headless:
                 options.add_argument('--headless')
-            return Edge(options=options)
+            try:
+                return Edge(options=options)
+            except NoSuchDriverException:
+                service = EdgeService(str(Path.cwd() / "msedgedriver.exe"))
+                return Edge(options=options, service=service) 
 
         elif browser == 'Safari':
-            from selenium.webdriver import Safari
+            from selenium.webdriver import Safari, SafariService
             from selenium.webdriver.safari.options import Options
             options = Options()
             if headless:
                 options.add_argument('--headless')
-            return Safari(options=options)
+            try:
+                return Safari(options=options)
+            except NoSuchDriverException:
+                service = SafariService(str(Path.cwd() / "safaridriver.exe"))
+                return Safari(options=options, service=service)
 
     def create_dataset(self):
         """Create a dataset of nested dictionaries from the webpage.
