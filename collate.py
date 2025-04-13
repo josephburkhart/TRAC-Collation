@@ -976,7 +976,7 @@ class CollationEngine():
         sleep(self.wait_time)
 
         # Set third axis to the same as first axis to speed up table population
-        self.menus[2].set_to(axis_1)
+        # self.menus[2].set_to(axis_1)
 
         # Determine second axis
         avg_n_possible_t2 = []
