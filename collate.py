@@ -1215,7 +1215,7 @@ class CollationEngine():
                     (t1_row.value != sum([r.value for r in table_2.rows])) and 
                     (attempt_count_1 < attempt_cap_1)
                 ):
-                    # Check for that edge case where #1 = #3, but #3 != #2
+                    # Check for that edge case
                     if (
                         (t1_row.value == table_2.total_row_value) and
                         (table_2.total_row_value != sum([r.value for r in table_2.rows]))
@@ -1306,7 +1306,7 @@ class CollationEngine():
                             (t2_row.value != sum([r.value for r in table_3.rows])) and 
                             (attempt_count_2 < attempt_cap_2)
                         ):
-                            # Check for that edge case where #1 = #3, but #3 != #2
+                            # Check for that edge case
                             if (
                                 (t2_row.value == table_3.total_row_value) and
                                 (table_3.total_row_value != sum([r.value for r in table_3.rows]))
