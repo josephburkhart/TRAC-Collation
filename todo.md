@@ -4,8 +4,8 @@
 - [x] add support for other browsers (will probably require a config file)
 - [x] add try-except blocks to catch stale reference exceptions and the like
 - [x] add an optimize flag to CollateEngine.__init__ to indicate whether we should solve for the path through the specified axes that minimizes the number of total clicks/waits
-- [ ] make axes optimization use the wait strategy to ensure that totals add up properly
-- [ ] make axes optimization take advantage of the default value-descending sort order (once we reach the point where a table 1 row corresponds to only a few table 2 rows, we can assume that basically every remaining table 1 row will correspond to that number or fewer table 2 rows, eliminating the need to click on all remaining table 1 rows)
+- [x] make axes optimization use the wait strategy to ensure that totals add up properly
+- [x] make axes optimization take advantage of the default value-descending sort order (once we reach the point where a table 1 row corresponds to only a few table 2 rows, we can assume that basically every remaining table 1 row will correspond to that number or fewer table 2 rows, eliminating the need to click on all remaining table 1 rows)
 - [x] figure out why expected and actual table totals sometimes just don't add up (currently, we detect those cases and just raise a RuntimeError)
 - [ ] create a decorator to wrap the while-try-except functionality, which is currently duplicated across many methods
 - [ ] add support for other webpage types:
