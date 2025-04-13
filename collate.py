@@ -1273,6 +1273,7 @@ class CollationEngine():
                 ):
                     t2_data_cumulative_sum = 0
                     t2_totals_cumulative_sum = 0
+                    t3_text_rows_previous = []
 
                     pbar2 = tqdm(range(len(table_2.rows)), leave=False, bar_format=pbar_format)
                     for j in pbar2:
@@ -1344,7 +1345,29 @@ class CollationEngine():
                             
                             else:
                                 sleep(self.wait_time)
-                            
+                        
+                        # One final check: try to ensure that table 3 text rows
+                        # have changed from the previous iteration. If they are
+                        # the same, wait a little while, and then continue. In
+                        # very rare situations they are actually supposed to be
+                        # the same, but most of the time they are not.
+                        attempt_cap_3 = 100
+                        attempt_count_3 = 0
+                        while (
+                            (t3_text_rows_previous == table_3.text_rows) and
+                            (attempt_count_3 < attempt_cap_3)
+                        ):
+                            # Increment the counter and continue if cap is reached
+                            attempt_count_3 += 1
+                            if attempt_count_3 == attempt_cap_3:
+                                break
+
+                            # Recalculate and wait a bit
+                            table_3.recalculate_rows()
+                            sleep(self.wait_time)
+
+                        t3_text_rows_previous = copy(table_3.text_rows)
+
                         # Copy rows from table 3 into the data dictionary
                         t3_rows = table_3.text_rows
                         t3_rows = [r.rsplit(' ', 1) for r in t3_rows]
